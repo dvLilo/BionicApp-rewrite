@@ -1,4 +1,6 @@
-import { useRef } from "react"
+import { useEffect, useRef } from 'react'
+
+import * as SQLite from 'expo-sqlite'
 
 import {
   View,
@@ -17,7 +19,55 @@ import SafeAreaView from '../../components/SafeAreaView'
 
 const Landing = ({ navigation }) => {
 
+  const db = SQLite.openDatabase("bionic.db")
+
   const bottomSheetRef = useRef(null);
+
+  // useEffect(() => {
+  //   (async () => {
+
+  //     db.transactionAsync(async (trxn) => {
+  //       try {
+  //         const res = await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
+  //         // const res = await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+  //         // const res = await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) values (?, ?)", [1, "LARA 1"])
+  //         // const res = await trxn.executeSqlAsync("SELECT * FROM `farms`")
+
+  //         console.log(res)
+  //       } catch (error) {
+  //         console.log("Error: ", error)
+  //       }
+
+
+  //   })
+  //     })()
+  // }, [])
+
+  const initializeDatabaseSetup = (index) => {
+    if (index === 0) {
+      db.transactionAsync(async (trxn) => {
+        try {
+          // Reset tables
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `users`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `categories`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plate`")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `fullname` VARCHAR(255) NOT NULL, `username` VARCHAR(255) NOT NULL, `password` VARCHAR(255) NOT NULL, `role` VARCHAR(255) NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        } catch (error) {
+          console.log("Create database table error: ", error)
+        }
+      })
+    }
+  }
 
   return (
     <ImageBackground style={styles.background} source={require('../../assets/start.png')}>
@@ -47,6 +97,7 @@ const Landing = ({ navigation }) => {
         ref={bottomSheetRef}
         snapPoints={["36"]}
         backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
+        onChange={initializeDatabaseSetup}
         enablePanDownToClose
       >
         <BottomSheetScrollView style={{ backgroundColor: "#effcff", }}>

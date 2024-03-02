@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react"
 
+import * as SQLite from "expo-sqlite"
+
 import {
   View,
   StyleSheet,

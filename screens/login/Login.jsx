@@ -21,7 +21,7 @@ import {
 
 import {
   Button,
-  Snackbar,
+  HelperText,
   Text,
   TextInput
 } from 'react-native-paper'
@@ -209,29 +209,34 @@ const Login = ({ navigation }) => {
               control={control}
               name="username"
               render={({ field: { value, onChange } }) => (
-                <TextInput
-                  label="Username"
-                  mode="flat"
-                  value={value}
-                  onChangeText={onChange}
-                  style={{
-                    backgroundColor: 'transparent',
-                    marginBottom: 16,
-                    borderColor: '#646ECB',
-                    borderBottomWidth: 3,
-                  }}
-                  underlineStyle={{
-                    display: 'none',
-                  }}
-                  left={
-                    <TextInput.Icon
-                      icon={({ color, size }) => <FeatherIcons name="user" size={size} color={color} />}
-                      size={20}
-                      forceTextInputFocus={false}
-                    />
-                  }
-                  dense
-                />
+                <View>
+                  <TextInput
+                    label="Username"
+                    mode="flat"
+                    value={value}
+                    onChangeText={onChange}
+                    style={{
+                      backgroundColor: 'transparent',
+                      borderColor: '#646ECB',
+                      borderBottomWidth: 3,
+                    }}
+                    underlineStyle={{
+                      display: 'none',
+                    }}
+                    left={
+                      <TextInput.Icon
+                        icon={({ color, size }) => <FeatherIcons name="user" size={size} color={color} />}
+                        size={20}
+                        forceTextInputFocus={false}
+                      />
+                    }
+                    dense
+                  />
+
+                  <HelperText type="error" visible={!!errors?.username}>
+                    {errors?.username?.message}
+                  </HelperText>
+                </View>
               )}
             />
 
@@ -239,37 +244,42 @@ const Login = ({ navigation }) => {
               control={control}
               name="password"
               render={({ field: { value, onChange } }) => (
-                <TextInput
-                  label="Password"
-                  value={value}
-                  secureTextEntry={visible}
-                  onChangeText={onChange}
-                  style={{
-                    backgroundColor: 'transparent',
-                    marginBottom: 16,
-                    borderColor: '#646ECB',
-                    borderBottomWidth: 3,
-                  }}
-                  underlineStyle={{
-                    display: 'none',
-                  }}
-                  left={
-                    <TextInput.Icon
-                      icon={({ color, size }) => <FeatherIcons name="lock" size={size} color={color} />}
-                      size={20}
-                      forceTextInputFocus={false}
-                    />
-                  }
-                  right={
-                    <TextInput.Icon
-                      icon={({ color, size }) => <FeatherIcons name="eye" size={size} color={color} />}
-                      size={20}
-                      onPress={togglePasswordVisibility}
-                    />
-                  }
-                  underlineColor="#646ECB"
-                  dense
-                />
+                <View>
+                  <TextInput
+                    label="Password"
+                    value={value}
+                    secureTextEntry={visible}
+                    onChangeText={onChange}
+                    style={{
+                      backgroundColor: 'transparent',
+                      borderColor: '#646ECB',
+                      borderBottomWidth: 3,
+                    }}
+                    underlineStyle={{
+                      display: 'none',
+                    }}
+                    left={
+                      <TextInput.Icon
+                        icon={({ color, size }) => <FeatherIcons name="lock" size={size} color={color} />}
+                        size={20}
+                        forceTextInputFocus={false}
+                      />
+                    }
+                    right={
+                      <TextInput.Icon
+                        icon={({ color, size }) => <FeatherIcons name="eye" size={size} color={color} />}
+                        size={20}
+                        onPress={togglePasswordVisibility}
+                      />
+                    }
+                    underlineColor="#646ECB"
+                    dense
+                  />
+
+                  <HelperText type="error" visible={!!errors?.password}>
+                    {errors?.password?.message}
+                  </HelperText>
+                </View>
               )}
             />
 

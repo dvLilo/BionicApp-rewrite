@@ -15,8 +15,7 @@ import {
   Divider,
   IconButton,
   Switch,
-  Text,
-  TextInput
+  Text
 } from 'react-native-paper'
 
 import FeatherIcons from '@expo/vector-icons/Feather'

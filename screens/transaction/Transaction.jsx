@@ -1,11 +1,14 @@
 import React, { useRef, useState } from "react"
 import * as yup from "yup"
 
-import { View, StyleSheet, ImageBackground, FlatList, Image } from "react-native"
+import dayjs from "dayjs"
+
+import { View, StyleSheet, ImageBackground, FlatList, Image, TouchableOpacity } from "react-native"
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet"
 import { Button, Divider, HelperText, Text, TextInput, TouchableRipple } from "react-native-paper"
 import { LinearGradient } from "expo-linear-gradient"
 import DropDownPicker from "react-native-dropdown-picker"
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker"
 import { Swipeable } from "react-native-gesture-handler"
 
 import FeatherIcons from "@expo/vector-icons/Feather"
@@ -19,9 +22,13 @@ import { yupResolver } from "@hookform/resolvers/yup"
 const schema = yup.object().shape({
   type: yup.string().required().label("Transaction type"),
 
+  harvested_at: yup.date().required().label("Harvest date"),
+
   category: yup.object().required().label("Category"),
   farm: yup.object().required().label("Farm"),
   building: yup.object().required().label("Building no."),
+  leadman: yup.object().required().label("Leadman"),
+  checker: yup.object().required().label("Checker"),
   buyer: yup.object().required().label("Buyer"),
   plate: yup.object().required().label("Plate no."),
 
@@ -45,6 +52,16 @@ const BUILDINGS = [
   { id: 2, label: "BLDG 2", value: "BLDG 2" }
 ]
 
+const LEADMANS = [
+  { id: 1, label: "LEADMAN 1", value: "LEADMAN 1" },
+  { id: 2, label: "LEADMAN 2", value: "LEADMAN 2" }
+]
+
+const CHECKERS = [
+  { id: 1, label: "CHECKER 1", value: "CHECKER 1" },
+  { id: 2, label: "CHECKER 2", value: "CHECKER 2" }
+]
+
 const BUYERS = [
   { id: 1, label: "BUYER 1", value: "BUYER 1" },
   { id: 2, label: "BUYER 2", value: "BUYER 2" }
@@ -64,15 +81,19 @@ const Transaction = ({ navigation }) => {
     setValue,
     resetField,
 
-    formState: { errors }
+    formState: { errors, dirtyFields }
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       type: null,
 
+      harvested_at: new Date(),
+
       category: null,
       farm: null,
       building: null,
+      leadman: null,
+      checker: null,
       buyer: null,
       plate: null,
 
@@ -97,8 +118,12 @@ const Transaction = ({ navigation }) => {
   const { open: categoryOpen, onToggle: categoryToggle } = useDisclosure()
   const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
   const { open: buildingOpen, onToggle: buildingToggle } = useDisclosure()
+  const { open: leadmanOpen, onToggle: leadmanToggle } = useDisclosure()
+  const { open: checkerOpen, onToggle: checkerToggle } = useDisclosure()
   const { open: buyerOpen, onToggle: buyerToggle } = useDisclosure()
   const { open: plateOpen, onToggle: plateToggle } = useDisclosure()
+
+  const { open: datePickerOpen, onToggle: datePickerToggle } = useDisclosure()
 
   // console.log("Errors: ", errors)
   // console.log("Data: ", watch())
@@ -364,8 +389,49 @@ const Transaction = ({ navigation }) => {
 
           <View style={{ marginTop: 52, marginBottom: 52, paddingLeft: 16, paddingRight: 16, gap: 16 }}>
             <Controller
+              name="harvested_at"
               control={control}
+              render={({ field: { value, onChange }, formState: { isDirty } }) => {
+
+                const onDatePickerPress = () => {
+                  DateTimePickerAndroid.open({
+                    mode: "date",
+                    value: value,
+                    onChange: (_, date) => onChange(date)
+                  })
+                }
+
+                return (
+                  <TouchableOpacity onPress={onDatePickerPress}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: "#ffffff",
+                        minHeight: 50,
+                        borderColor: "#000000",
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 3
+                      }}
+                    >
+                      {
+                        isDirty
+                          ? <Text>{dayjs(value).format("DD/MM/YYYY")}</Text>
+                          : <Text>Harvest Date</Text>
+                      }
+                      <FeatherIcons name="calendar" size={18} />
+                    </View>
+                  </TouchableOpacity>
+                )
+              }}
+            />
+
+            <Controller
               name="category"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <DropDownPicker
                   placeholder="Select Category"
@@ -382,8 +448,8 @@ const Transaction = ({ navigation }) => {
             />
 
             <Controller
-              control={control}
               name="farm"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <DropDownPicker
                   placeholder="Select Farm"
@@ -400,8 +466,8 @@ const Transaction = ({ navigation }) => {
             />
 
             <Controller
-              control={control}
               name="building"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <DropDownPicker
                   placeholder="Select Building No."
@@ -418,8 +484,44 @@ const Transaction = ({ navigation }) => {
             />
 
             <Controller
+              name="leadman"
               control={control}
+              render={({ field: { value, onChange } }) => (
+                <DropDownPicker
+                  placeholder="Select Leadman"
+                  listMode="SCROLLVIEW"
+                  open={leadmanOpen}
+                  value={value?.value}
+                  items={LEADMANS}
+                  setOpen={leadmanToggle}
+                  onSelectItem={onChange}
+
+                  zIndex={666}
+                />
+              )}
+            />
+
+            <Controller
+              name="checker"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <DropDownPicker
+                  placeholder="Select Checker"
+                  listMode="SCROLLVIEW"
+                  open={checkerOpen}
+                  value={value?.value}
+                  items={CHECKERS}
+                  setOpen={checkerToggle}
+                  onSelectItem={onChange}
+
+                  zIndex={555}
+                />
+              )}
+            />
+
+            <Controller
               name="buyer"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <DropDownPicker
                   placeholder="Select Buyer"
@@ -430,14 +532,14 @@ const Transaction = ({ navigation }) => {
                   setOpen={buyerToggle}
                   onSelectItem={onChange}
 
-                  zIndex={666}
+                  zIndex={444}
                 />
               )}
             />
 
             <Controller
-              control={control}
               name="plate"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <DropDownPicker
                   placeholder="Select Plate No."
@@ -448,7 +550,7 @@ const Transaction = ({ navigation }) => {
                   setOpen={plateToggle}
                   onSelectItem={onChange}
 
-                  zIndex={555}
+                  zIndex={333}
                 />
               )}
             />
@@ -460,8 +562,12 @@ const Transaction = ({ navigation }) => {
                 !watch("category") ||
                 !watch("farm") ||
                 !watch("building") ||
-                !watch("farm") ||
-                !watch("plate")
+                !watch("leadman") ||
+                !watch("checker") ||
+                !watch("buyer") ||
+                !watch("plate") ||
+                !watch("harvested_at") ||
+                !dirtyFields?.harvested_at
               }
               onPress={() => bottomSheetRef.current.close()}
             >
