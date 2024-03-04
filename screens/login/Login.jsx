@@ -146,55 +146,63 @@ const Login = ({ navigation }) => {
   const onSubmit = (data) => {
     setIsLoading(true)
 
-    db.transaction((txn) => {
-      txn.executeSql(
-        "SELECT * FROM `users` WHERE `username` = ?", [data.username],
-        (_, result) => {
-          if (result.rows.length === 0) {
-            setIsLoading(false)
-            return toast({ message: "Invalid username or password. Please check your credentials." })
-          }
+    db.transactionAsync(async (trxn) => {
+      try {
+        const { rows } = await trxn.executeSqlAsync("SELECT * FROM `users` WHERE `username` = ?", [data.username])
 
-          const { password } = result.rows._array.at(0)
-
-          bcrypt.compare(data.password, password, (_, match) => {
-            if (match) {
-              reset()
-              setIsLoading(false)
-              return navigation.navigate("Dashboard")
-            }
-
-            setIsLoading(false)
-            return toast({ message: "Invalid username or password. Please check your credentials." })
-          })
-        },
-        (_, error) => {
-          setIsLoading(false)
-          return toast({ message: "Something went wrong whilst trying to connect to the database." })
+        if (rows.length === 0) {
+          throw new Error("Invalid username or password.")
         }
-      )
+
+        const { password, ...userData } = rows.at(0)
+
+        const compareAsync = (string, hash) => {
+          return new Promise((resolve, reject) => {
+            bcrypt.compare(string, hash, (error, result) => {
+              if (error) {
+                reject(error)
+              }
+
+              resolve(result)
+            })
+          })
+        }
+
+        const match = await compareAsync(data.password, password)
+
+        if (match) {
+          localStorage.setItem("user", JSON.stringify(userData))
+
+          reset()
+          setIsLoading(false)
+
+          return navigation.navigate("Dashboard")
+        }
+
+        throw new Error("Invalid username or password.")
+      } catch (error) {
+        setIsLoading(false)
+
+        toast({ message: error.message })
+      }
     })
   }
 
   const signBiometricHandler = async () => {
     const isBiometricAvailable = await LocalAuthentication.hasHardwareAsync()
     if (!isBiometricAvailable) {
-      return console.log("Biometric auth is not available.")
+      return toast({ message: "Biometric auth is not available." })
     }
 
-    // const supportedBiometric = await LocalAuthentication.supportedAuthenticationTypesAsync()
-
-    // const isBiometricSaved = await LocalAuthentication.isEnrolledAsync()
-    // if (!isBiometricSaved) {
-    //   return console.log("No biometric found")
-    // }
+    const isBiometricSaved = await LocalAuthentication.isEnrolledAsync()
+    if (!isBiometricSaved) {
+      return toast({ message: "No biometric found." })
+    }
 
     const auth = await LocalAuthentication.authenticateAsync()
 
-    console.log(auth)
-
     if (auth.success) {
-      console.log("Success!")
+      navigation.navigate("Dashboard")
     }
   }
 

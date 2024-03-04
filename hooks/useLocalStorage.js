@@ -17,7 +17,15 @@ const useLocalStorage = () => {
     }
   }
 
-  return { setItem, getItem }
+  const removeItem = async (key) => {
+    try {
+      return AsyncStorage.removeItem(key)
+    } catch (error) {
+      console.log("Async storage remove item error: ", error)
+    }
+  }
+
+  return { setItem, getItem, removeItem }
 }
 
 export default useLocalStorage

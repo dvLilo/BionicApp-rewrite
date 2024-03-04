@@ -34,6 +34,8 @@ const Settings = ({ navigation }) => {
   const toast = useToast()
   const localStorage = useLocalStorage()
 
+  const [userData, setUserData] = useState(null)
+
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
   const [isDarkModeEnabled, setIsDarkModeEnabled] = useState(false)
 
@@ -50,6 +52,12 @@ const Settings = ({ navigation }) => {
 
       if (darkMode) {
         setIsDarkModeEnabled(!!parseInt(darkMode))
+      }
+
+      const userData = await localStorage.getItem("user")
+
+      if (userData) {
+        setUserData(JSON.parse(userData))
       }
     })()
   }, [])
@@ -75,6 +83,15 @@ const Settings = ({ navigation }) => {
   }
 
 
+  const onSignOutPress = async () => {
+    if (!isBiometricEnabled) {
+      await localStorage.removeItem("user")
+    }
+
+    navigation.navigate("Login")
+  }
+
+
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true)
 
@@ -95,10 +112,21 @@ const Settings = ({ navigation }) => {
             </View>
 
             <View style={{ backgroundColor: "rgba(0,0,0,0)", flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 8, paddingVertical: 24, borderRadius: 16 }}>
-              <Avatar.Text label="LL" size={52} labelStyle={{ fontSize: 18, fontWeight: 700 }} style={{ backgroundColor: "#646ecb" }} />
+              <Avatar.Text
+                label={userData?.fullname.split(" ").reduce((c, n) => c + n.at(0), "")}
+                size={52}
+                labelStyle={{
+                  fontSize: 18,
+                  fontWeight: 700
+                }}
+                style={{
+                  backgroundColor: "#646ecb"
+                }}
+              />
+
               <View style={{ gap: -4 }}>
-                <Text variant="titleLarge" style={{ color: "#131304", fontWeight: 700 }}>LIMAYY LOUIE DUCUT</Text>
-                <Text variant="titleSmall" style={{ color: "#131304", opacity: 0.64 }}>Administrator</Text>
+                <Text variant="titleLarge" style={{ color: "#131304", fontWeight: 700, textTransform: "uppercase" }}>{userData?.fullname}</Text>
+                <Text variant="titleSmall" style={{ color: "#131304", textTransform: "capitalize", opacity: 0.64 }}>{userData?.role}</Text>
               </View>
             </View>
 
@@ -225,7 +253,7 @@ const Settings = ({ navigation }) => {
             <Text variant="titleMedium">Are you sure you want to proceed?</Text>
 
             <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
-              <Button mode="contained" onPress={() => navigation.navigate("Login")}>Yes</Button>
+              <Button mode="contained" onPress={onSignOutPress}>Yes</Button>
               <Button onPress={() => bottomSheetRef.current.close()}>No</Button>
             </View>
           </View>
