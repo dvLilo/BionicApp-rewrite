@@ -1,4 +1,7 @@
 import React, { useRef, useState } from "react"
+
+import * as SQLite from "expo-sqlite"
+
 import * as yup from "yup"
 
 import dayjs from "dayjs"
@@ -8,7 +11,7 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom
 import { Button, Divider, HelperText, Text, TextInput, TouchableRipple } from "react-native-paper"
 import { LinearGradient } from "expo-linear-gradient"
 import DropDownPicker from "react-native-dropdown-picker"
-import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker"
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker"
 import { Swipeable } from "react-native-gesture-handler"
 
 import FeatherIcons from "@expo/vector-icons/Feather"
@@ -19,7 +22,7 @@ import useDisclosure from "../../hooks/useDisclosure"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 
-const schema = yup.object().shape({
+const informationSchema = yup.object().shape({
   type: yup.string().required().label("Transaction type"),
 
   harvested_at: yup.date().required().label("Harvest date"),
@@ -30,7 +33,11 @@ const schema = yup.object().shape({
   leadman: yup.object().required().label("Leadman"),
   checker: yup.object().required().label("Checker"),
   buyer: yup.object().required().label("Buyer"),
-  plate: yup.object().required().label("Plate no."),
+  plate: yup.object().required().label("Plate no.")
+})
+
+const transactionSchema = yup.object().shape({
+  info_id: yup.number().required().label("Information ID"),
 
   heads: yup.number().required().label("Heads").typeError("Invalid heads value."),
   weight: yup.number().required().label("Weight").typeError("Invalid weight value.")
@@ -76,58 +83,23 @@ const Transaction = ({ navigation }) => {
 
   const {
     control,
-    watch,
     handleSubmit,
     setValue,
     resetField,
 
-    formState: { errors, dirtyFields }
+    formState: { errors }
   } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(transactionSchema),
     defaultValues: {
-      type: null,
-
-      harvested_at: new Date(),
-
-      category: null,
-      farm: null,
-      building: null,
-      leadman: null,
-      checker: null,
-      buyer: null,
-      plate: null,
-
-      // type: "poultry",
-
-      // category: { id: 1, label: "BYAHERO", value: "BYAHERO" },
-      // farm: { id: 1, label: "LARA 1", value: "LARA 1" },
-      // building: { id: 1, label: "BLDG 1", value: "BLDG 1" },
-      // buyer: { id: 1, label: "BUYER 1", value: "BUYER 1" },
-      // plate: { id: 1, label: "AAV 3002", value: "AAV 3002" },
+      info_id: null,
 
       heads: "",
       weight: "",
     }
   })
 
-  const bottomSheetRef = useRef(null);
-
   const [index, setIndex] = useState(null)
   const [transactions, setTransactions] = useState([])
-
-  const { open: categoryOpen, onToggle: categoryToggle } = useDisclosure()
-  const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
-  const { open: buildingOpen, onToggle: buildingToggle } = useDisclosure()
-  const { open: leadmanOpen, onToggle: leadmanToggle } = useDisclosure()
-  const { open: checkerOpen, onToggle: checkerToggle } = useDisclosure()
-  const { open: buyerOpen, onToggle: buyerToggle } = useDisclosure()
-  const { open: plateOpen, onToggle: plateToggle } = useDisclosure()
-
-  const { open: datePickerOpen, onToggle: datePickerToggle } = useDisclosure()
-
-  // console.log("Errors: ", errors)
-  // console.log("Data: ", watch())
-  // console.log("Transactions: ", transactions)
 
   const onSubmit = (data) => {
 
@@ -352,234 +324,317 @@ const Transaction = ({ navigation }) => {
         </View>
       </SafeAreaView>
 
-      <BottomSheet
-        index={0}
-        ref={bottomSheetRef}
-        snapPoints={[184, 528]}
-        enableContentPanningGesture={false}
-        backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
-      >
-        <BottomSheetScrollView style={styles.contentContainer}>
-          <View style={{ flexDirection: "row", justifyContent: "space-evenly" }}>
-            <View style={{ alignItems: "center", gap: 8 }}>
-              <View style={{ width: 116, height: 116, justifyContent: "center", alignItems: "center", ...(watch("type") === "swine" && { borderColor: "#ff0462", borderWidth: 4, borderRadius: 128 }) }}>
-                <TouchableRipple style={{ width: 100, height: 100, borderRadius: 52 }} onPress={() => { bottomSheetRef.current.snapToPosition(528); setValue("type", "swine") }} borderless>
-                  <LinearGradient colors={['#ff0462', '#fe9402']} start={{ x: 0, y: 0 }} style={{ flex: 1, justifyContent: "center", alignItems: "center", borderRadius: 52 }}>
-                    <Image style={{ width: 64, height: 64 }} source={require('../../assets/swine.png')} />
-                  </LinearGradient>
-                </TouchableRipple>
-              </View>
-
-              <Text variant="bodyLarge" style={{ ...(watch("type") === "swine" && { color: "#646ECB" }), fontWeight: 700 }}>Swine</Text>
-            </View>
-
-            <View style={{ alignItems: "center", gap: 8 }}>
-              <View style={{ width: 116, height: 116, justifyContent: "center", alignItems: "center", ...(watch("type") === "poultry" && { borderColor: "#646ECB", borderWidth: 4, borderRadius: 128 }) }}>
-                <TouchableRipple style={{ width: 100, height: 100, borderRadius: 52 }} onPress={() => { bottomSheetRef.current.snapToPosition(528); setValue("type", "poultry") }} borderless>
-                  <LinearGradient colors={['#983cfe', '#37b2fa']} start={{ x: 1, y: 0 }} style={{ flex: 1, justifyContent: "center", alignItems: "center", borderRadius: 52 }}>
-                    <Image style={{ width: 64, height: 64 }} source={require('../../assets/poultry.png')} />
-                  </LinearGradient>
-                </TouchableRipple>
-              </View>
-
-
-              <Text variant="bodyLarge" style={{ ...(watch("type") === "poultry" && { color: "#646ECB" }), fontWeight: 700 }}>Poultry</Text>
-            </View>
-          </View>
-
-          <View style={{ marginTop: 52, marginBottom: 52, paddingLeft: 16, paddingRight: 16, gap: 16 }}>
-            <Controller
-              name="harvested_at"
-              control={control}
-              render={({ field: { value, onChange }, formState: { isDirty } }) => {
-
-                const onDatePickerPress = () => {
-                  DateTimePickerAndroid.open({
-                    mode: "date",
-                    value: value,
-                    onChange: (_, date) => onChange(date)
-                  })
-                }
-
-                return (
-                  <TouchableOpacity onPress={onDatePickerPress}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        backgroundColor: "#ffffff",
-                        minHeight: 50,
-                        borderColor: "#000000",
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        paddingHorizontal: 10,
-                        paddingVertical: 3
-                      }}
-                    >
-                      {
-                        isDirty
-                          ? <Text>{dayjs(value).format("DD/MM/YYYY")}</Text>
-                          : <Text>Harvest Date</Text>
-                      }
-                      <FeatherIcons name="calendar" size={18} />
-                    </View>
-                  </TouchableOpacity>
-                )
-              }}
-            />
-
-            <Controller
-              name="category"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Category"
-                  listMode="SCROLLVIEW"
-                  open={categoryOpen}
-                  value={value?.value}
-                  items={CATEGORIES}
-                  setOpen={categoryToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={999}
-                />
-              )}
-            />
-
-            <Controller
-              name="farm"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Farm"
-                  listMode="SCROLLVIEW"
-                  open={farmOpen}
-                  value={value?.value}
-                  items={FARMS}
-                  setOpen={farmToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={888}
-                />
-              )}
-            />
-
-            <Controller
-              name="building"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Building No."
-                  listMode="SCROLLVIEW"
-                  open={buildingOpen}
-                  value={value?.value}
-                  items={BUILDINGS}
-                  setOpen={buildingToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={777}
-                />
-              )}
-            />
-
-            <Controller
-              name="leadman"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Leadman"
-                  listMode="SCROLLVIEW"
-                  open={leadmanOpen}
-                  value={value?.value}
-                  items={LEADMANS}
-                  setOpen={leadmanToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={666}
-                />
-              )}
-            />
-
-            <Controller
-              name="checker"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Checker"
-                  listMode="SCROLLVIEW"
-                  open={checkerOpen}
-                  value={value?.value}
-                  items={CHECKERS}
-                  setOpen={checkerToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={555}
-                />
-              )}
-            />
-
-            <Controller
-              name="buyer"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Buyer"
-                  listMode="SCROLLVIEW"
-                  open={buyerOpen}
-                  value={value?.value}
-                  items={BUYERS}
-                  setOpen={buyerToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={444}
-                />
-              )}
-            />
-
-            <Controller
-              name="plate"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropDownPicker
-                  placeholder="Select Plate No."
-                  listMode="SCROLLVIEW"
-                  open={plateOpen}
-                  value={value?.value}
-                  items={PLATES}
-                  setOpen={plateToggle}
-                  onSelectItem={onChange}
-
-                  zIndex={333}
-                />
-              )}
-            />
-
-            <Button
-              mode="contained"
-              disabled={
-                !watch("type") ||
-                !watch("category") ||
-                !watch("farm") ||
-                !watch("building") ||
-                !watch("leadman") ||
-                !watch("checker") ||
-                !watch("buyer") ||
-                !watch("plate") ||
-                !watch("harvested_at") ||
-                !dirtyFields?.harvested_at
-              }
-              onPress={() => bottomSheetRef.current.close()}
-            >
-              Proceed
-            </Button>
-
-            <Button mode="contained" buttonColor="#EB5160" onPress={() => navigation.goBack()}>Cancel</Button>
-          </View>
-        </BottomSheetScrollView>
-      </BottomSheet>
+      <TransactionBottom navigation={navigation} />
     </ImageBackground >
   );
+}
+
+const TransactionBottom = ({ navigation }) => {
+
+  const db = SQLite.openDatabase("bionic.db")
+
+  const bottomSheetRef = useRef(null);
+
+  const {
+    control,
+    watch,
+    handleSubmit,
+
+    formState: { errors, dirtyFields }
+  } = useForm({
+    resolver: yupResolver(informationSchema),
+    defaultValues: {
+      type: null,
+
+      harvested_at: new Date(),
+
+      category: null,
+      farm: null,
+      building: null,
+      leadman: null,
+      checker: null,
+      buyer: null,
+      plate: null
+    }
+  })
+
+  console.log(errors)
+  console.log("Data: ", watch())
+
+  const { open: categoryOpen, onToggle: categoryToggle } = useDisclosure()
+  const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
+  const { open: buildingOpen, onToggle: buildingToggle } = useDisclosure()
+  const { open: leadmanOpen, onToggle: leadmanToggle } = useDisclosure()
+  const { open: checkerOpen, onToggle: checkerToggle } = useDisclosure()
+  const { open: buyerOpen, onToggle: buyerToggle } = useDisclosure()
+  const { open: plateOpen, onToggle: plateToggle } = useDisclosure()
+
+  const onSubmit = (data) => {
+    const {
+      type,
+      harvested_at,
+      category: { id: category_id },
+      farm: { id: farm_id },
+      building: { id: building_id },
+      leadman: { id: leadman_id },
+      checker: { id: checker_id },
+      buyer: { id: buyer_id },
+      plate: { id: plate_id }
+    } = data
+
+    db.transactionAsync(async (trxn) => {
+
+      await trxn.executeSqlAsync("INSERT INTO `informations` (`user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `checker_id`, `buyer_id`, `plate_id`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [1, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, dayjs(harvested_at).format("YYYY-MM-DD") + 1, dayjs(harvested_at).format("YYYY-MM-DD")])
+    })
+    // bottomSheetRef.current.close()
+  }
+
+  return (
+    <BottomSheet
+      index={0}
+      ref={bottomSheetRef}
+      snapPoints={[184, 528]}
+      enableContentPanningGesture={false}
+      backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
+    >
+      <BottomSheetScrollView style={styles.contentContainer}>
+        <View style={{ flexDirection: "row", justifyContent: "space-evenly" }}>
+          <Controller
+            name="type"
+            control={control}
+            render={({ field: { value, onChange } }) => {
+
+              const onRadioButtonPress = () => {
+                bottomSheetRef.current.snapToPosition(528)
+
+                onChange("swine")
+              }
+
+              return (
+                <View style={styles.radioContainer}>
+                  <View style={[styles.radioBorder, value === "swine" && { borderColor: "#ff0462", borderWidth: 4, borderRadius: 128 }]}>
+                    <TouchableRipple style={styles.radioButton} onPress={onRadioButtonPress} borderless>
+                      <LinearGradient style={styles.radioGradient} colors={['#ff0462', '#fe9402']} start={{ x: 0, y: 0 }}>
+                        <Image style={styles.radioImage} source={require('../../assets/swine.png')} />
+                      </LinearGradient>
+                    </TouchableRipple>
+                  </View>
+
+                  <Text variant="bodyLarge" style={{ ...(value === "swine" && { color: "#646ECB" }), fontWeight: 700 }}>Swine</Text>
+                </View>
+              )
+            }}
+          />
+
+          <Controller
+            name="type"
+            control={control}
+            render={({ field: { value, onChange } }) => {
+
+              const onRadioButtonPress = () => {
+                bottomSheetRef.current.snapToPosition(528)
+
+                onChange("poultry")
+              }
+
+              return (
+                <View style={styles.radioContainer}>
+                  <View style={[styles.radioBorder, value === "poultry" && { borderColor: "#646ecb", borderWidth: 4, borderRadius: 128 }]}>
+                    <TouchableRipple style={styles.radioButton} onPress={onRadioButtonPress} borderless>
+                      <LinearGradient style={styles.radioGradient} colors={['#983cfe', '#37b2fa']} start={{ x: 1, y: 0 }}>
+                        <Image style={styles.radioImage} source={require('../../assets/poultry.png')} />
+                      </LinearGradient>
+                    </TouchableRipple>
+                  </View>
+
+
+                  <Text variant="bodyLarge" style={{ ...(value === "poultry" && { color: "#646ECB" }), fontWeight: 700 }}>Poultry</Text>
+                </View>
+              )
+            }}
+          />
+        </View>
+
+        <View style={{ marginTop: 52, marginBottom: 52, paddingLeft: 16, paddingRight: 16, gap: 16 }}>
+          <Controller
+            name="harvested_at"
+            control={control}
+            render={({ field: { value, onChange }, fieldState: { isDirty } }) => {
+
+              const onDatePickerPress = () => {
+                DateTimePickerAndroid.open({
+                  mode: "date",
+                  value: value,
+                  onChange: (_, date) => onChange(date)
+                })
+              }
+
+              return (
+                <TouchableOpacity onPress={onDatePickerPress}>
+                  <View style={styles.datePicker}>
+                    {
+                      isDirty
+                        ? <Text>{dayjs(value).format("DD/MM/YYYY")}</Text>
+                        : <Text>Harvest Date</Text>
+                    }
+
+                    <FeatherIcons name="calendar" size={18} />
+                  </View>
+                </TouchableOpacity>
+              )
+            }}
+          />
+
+          <Controller
+            name="category"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Category"
+                listMode="SCROLLVIEW"
+                open={categoryOpen}
+                value={value?.value}
+                items={CATEGORIES}
+                setOpen={categoryToggle}
+                onSelectItem={onChange}
+
+                zIndex={999}
+              />
+            )}
+          />
+
+          <Controller
+            name="farm"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Farm"
+                listMode="SCROLLVIEW"
+                open={farmOpen}
+                value={value?.value}
+                items={FARMS}
+                setOpen={farmToggle}
+                onSelectItem={onChange}
+
+                zIndex={888}
+              />
+            )}
+          />
+
+          <Controller
+            name="building"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Building No."
+                listMode="SCROLLVIEW"
+                open={buildingOpen}
+                value={value?.value}
+                items={BUILDINGS}
+                setOpen={buildingToggle}
+                onSelectItem={onChange}
+
+                zIndex={777}
+              />
+            )}
+          />
+
+          <Controller
+            name="leadman"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Leadman"
+                listMode="SCROLLVIEW"
+                open={leadmanOpen}
+                value={value?.value}
+                items={LEADMANS}
+                setOpen={leadmanToggle}
+                onSelectItem={onChange}
+
+                zIndex={666}
+              />
+            )}
+          />
+
+          <Controller
+            name="checker"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Checker"
+                listMode="SCROLLVIEW"
+                open={checkerOpen}
+                value={value?.value}
+                items={CHECKERS}
+                setOpen={checkerToggle}
+                onSelectItem={onChange}
+
+                zIndex={555}
+              />
+            )}
+          />
+
+          <Controller
+            name="buyer"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Buyer"
+                listMode="SCROLLVIEW"
+                open={buyerOpen}
+                value={value?.value}
+                items={BUYERS}
+                setOpen={buyerToggle}
+                onSelectItem={onChange}
+
+                zIndex={444}
+              />
+            )}
+          />
+
+          <Controller
+            name="plate"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <DropDownPicker
+                placeholder="Select Plate No."
+                listMode="SCROLLVIEW"
+                open={plateOpen}
+                value={value?.value}
+                items={PLATES}
+                setOpen={plateToggle}
+                onSelectItem={onChange}
+
+                zIndex={333}
+              />
+            )}
+          />
+
+          <Button
+            mode="contained"
+            disabled={
+              !watch("type") ||
+              !watch("category") ||
+              !watch("farm") ||
+              !watch("building") ||
+              !watch("leadman") ||
+              !watch("checker") ||
+              !watch("buyer") ||
+              !watch("plate") ||
+              !watch("harvested_at") ||
+              !dirtyFields?.harvested_at
+            }
+            onPress={handleSubmit(onSubmit)}
+          >
+            Proceed
+          </Button>
+
+          <Button mode="contained" buttonColor="#EB5160" onPress={() => navigation.goBack()}>Cancel</Button>
+        </View>
+      </BottomSheetScrollView>
+    </BottomSheet>
+  )
 }
 
 const styles = StyleSheet.create({
@@ -593,8 +648,49 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     backgroundColor: "#effcff",
-    // backgroundColor: "#04f404",
   },
+
+
+  radioContainer: {
+    alignItems: "center",
+    gap: 8
+  },
+  radioBorder: {
+    width: 116,
+    height: 116,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  radioButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 52
+  },
+  radioGradient: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 52
+  },
+  radioImage: {
+    width: 64,
+    height: 64
+  },
+
+  datePicker: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+
+    backgroundColor: "#ffffff",
+    minHeight: 50,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+
+    borderColor: "#000000",
+    borderWidth: 1,
+    borderRadius: 8
+  }
 });
 
 export default Transaction
