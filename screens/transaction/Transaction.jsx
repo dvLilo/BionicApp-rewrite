@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 
 import * as SQLite from "expo-sqlite"
 
@@ -17,7 +17,12 @@ import { Swipeable } from "react-native-gesture-handler"
 import FeatherIcons from "@expo/vector-icons/Feather"
 
 import SafeAreaView from "../../components/SafeAreaView"
+
+import { setInformationData, resetInformationData } from "../../features/information/information.slice"
+import { useDispatch, useSelector } from "react-redux"
+
 import useDisclosure from "../../hooks/useDisclosure"
+import useLocalStorage from "../../hooks/useLocalStorage"
 
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
@@ -25,7 +30,7 @@ import { yupResolver } from "@hookform/resolvers/yup"
 const informationSchema = yup.object().shape({
   type: yup.string().required().label("Transaction type"),
 
-  harvested_at: yup.date().required().label("Harvest date"),
+  date_harvest: yup.date().required().label("Harvest date"),
 
   category: yup.object().required().label("Category"),
   farm: yup.object().required().label("Farm"),
@@ -37,7 +42,7 @@ const informationSchema = yup.object().shape({
 })
 
 const transactionSchema = yup.object().shape({
-  info_id: yup.number().required().label("Information ID"),
+  information_id: yup.number().required().label("Information ID"),
 
   heads: yup.number().required().label("Heads").typeError("Invalid heads value."),
   weight: yup.number().required().label("Weight").typeError("Invalid weight value.")
@@ -81,6 +86,12 @@ const PLATES = [
 
 const Transaction = ({ navigation }) => {
 
+  const db = SQLite.openDatabase("bionic.db")
+
+  const information = useSelector((state) => state.information)
+
+  const bottomSheetRef = useRef(null);
+
   const {
     control,
     handleSubmit,
@@ -91,35 +102,43 @@ const Transaction = ({ navigation }) => {
   } = useForm({
     resolver: yupResolver(transactionSchema),
     defaultValues: {
-      info_id: null,
+      information_id: null,
 
       heads: "",
       weight: "",
     }
   })
 
+  useEffect(() => {
+    if (information) setValue("information_id", information.id)
+  }, [information])
+
   const [index, setIndex] = useState(null)
   const [transactions, setTransactions] = useState([])
 
   const onSubmit = (data) => {
 
-    if (index === null) {
-      setTransactions((currentValue) => ([
-        ...currentValue,
-        data
-      ]))
-    }
-    else {
-      setTransactions((currentValue) => ([
-        ...currentValue.map((item, itemIndex) => {
-          if (itemIndex === index) {
-            return data
-          }
+    const {
+      information_id,
+      heads,
+      weight
+    } = data
 
-          return item
-        })
-      ]))
-    }
+    const batch_no = transactions.length + 1
+
+    db.transactionAsync(async (trxn) => {
+      if (index === null) {
+        await trxn.executeSqlAsync("INSERT INTO `transactions` (`information_id`, `batch_no`, `heads`, `weight`) VALUES (?, ?, ?, ?)", [information_id, batch_no, heads, weight])
+      }
+      else {
+        await trxn.executeSqlAsync("UPDATE `transactions` SET `heads` = ?, `weight` = ? WHERE `information_id` = ? AND `batch_no` = ?", [heads, weight, information_id, index])
+      }
+
+      const {
+        rows
+      } = await trxn.executeSqlAsync("SELECT * FROM `transactions` WHERE `information_id` = ?", [information_id])
+      setTransactions(rows)
+    })
 
     resetField("heads")
     resetField("weight")
@@ -127,17 +146,30 @@ const Transaction = ({ navigation }) => {
     setIndex(null)
   }
 
-  const onDelete = (index) => {
-    setTransactions((currentValue) => ([
-      ...currentValue.filter((_, itemIndex) => itemIndex !== index)
-    ]))
+  const onDelete = (data) => {
+    db.transactionAsync(async (trxn) => {
+      await trxn.executeSqlAsync("DELETE FROM `transactions` WHERE `information_id` = ? AND `batch_no` = ?", [data.information_id, data.batch_no])
+
+      const {
+        rows
+      } = await trxn.executeSqlAsync("SELECT * FROM `transactions` WHERE `information_id` = ?", [data.information_id])
+      setTransactions(rows)
+    })
   }
 
   const onUpdate = (data) => {
-    setIndex(data.index)
+    setIndex(data.batch_no)
 
     setValue("heads", data.heads.toString())
     setValue("weight", data.weight.toString())
+  }
+
+  const onCancel = () => {
+    db.transactionAsync(async (trxn) => {
+      await trxn.executeSqlAsync("DELETE FROM `informations` WHERE `id` = ?", [information.id])
+
+      navigation.goBack()
+    })
   }
 
   return (
@@ -196,10 +228,8 @@ const Transaction = ({ navigation }) => {
               renderItem={({ item, index }) => (
                 <Swipeable
                   ref={(ref) => item[index] = ref}
-                  // rightThreshold={200}
-                  // leftThreshold={200}
                   renderRightActions={() => (
-                    <TouchableRipple onPress={() => { item[index].close(); onUpdate({ index, heads: item.heads, weight: item.weight }) }} borderless>
+                    <TouchableRipple onPress={() => { item[index].close(); onUpdate({ batch_no: item.batch_no, heads: item.heads, weight: item.weight }) }} borderless>
                       <View style={{ backgroundColor: "#646ECB", flex: 1, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 4, paddingHorizontal: 16 }}>
                         <FeatherIcons name="feather" size={18} color="white" />
                         <Text variant="bodyMedium" style={{ color: "white", fontWeight: 700 }}>Edit</Text>
@@ -207,7 +237,7 @@ const Transaction = ({ navigation }) => {
                     </TouchableRipple>
                   )}
                   renderLeftActions={() => (
-                    <TouchableRipple style={{ flex: 1 }} onPress={() => { item[index].reset(); onDelete(index) }} borderless>
+                    <TouchableRipple style={{ flex: 1 }} onPress={() => { item[index].reset(); onDelete({ batch_no: item.batch_no, information_id: item.information_id }) }} borderless>
                       <View style={{ backgroundColor: "#EB5160", flex: 1, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 4, paddingHorizontal: 16 }}>
                         <FeatherIcons name="trash" size={18} color="white" />
                         <Text variant="bodyMedium" style={{ color: "white", fontWeight: 700 }}>Remove</Text>
@@ -243,8 +273,8 @@ const Transaction = ({ navigation }) => {
 
           <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
             <Controller
-              control={control}
               name="heads"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <View style={{ flex: 1, flexDirection: "column" }}>
                   <TextInput
@@ -276,8 +306,8 @@ const Transaction = ({ navigation }) => {
             />
 
             <Controller
-              control={control}
               name="weight"
+              control={control}
               render={({ field: { value, onChange } }) => (
                 <View style={{ flex: 1, flexDirection: "column" }}>
                   <TextInput
@@ -314,24 +344,47 @@ const Transaction = ({ navigation }) => {
           <Divider style={{ marginVertical: 16 }} />
 
           <View style={{ gap: 8 }}>
-            <Button mode="contained" icon={({ color, size }) => <FeatherIcons name="save" size={size} color={color} />}>Save</Button>
+            <Button mode="contained" icon={({ color, size }) => <FeatherIcons name="save" size={size} color={color} />} onPress={() => navigation.goBack()}>Save</Button>
             <Button mode="contained-tonal" icon={({ color, size }) => <FeatherIcons name="printer" size={size} color={color} />}>Print</Button>
 
             <Divider style={{ marginVertical: 8 }} />
 
-            <Button mode="contained" buttonColor="#EB5160" onPress={() => navigation.goBack()}>Cancel</Button>
+            <Button mode="contained" buttonColor="#EB5160" onPress={() => bottomSheetRef.current.expand()}>Cancel</Button>
           </View>
         </View>
       </SafeAreaView>
 
-      <TransactionBottom navigation={navigation} />
+      <InformationBottom navigation={navigation} />
+
+      <BottomSheet
+        index={-1}
+        ref={bottomSheetRef}
+        snapPoints={["28"]}
+        backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
+        enablePanDownToClose
+      >
+        <BottomSheetScrollView style={{ backgroundColor: "#effcff", }}>
+          <View style={{ alignItems: "center" }}>
+            <FeatherIcons name="alert-triangle" color="#131304" size={52} style={{ marginTop: 24 }} />
+            <Text variant="titleMedium">Are you sure you want cancel this transaction?</Text>
+
+            <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+              <Button mode="contained" onPress={onCancel}>Yes</Button>
+              <Button onPress={() => bottomSheetRef.current.close()}>No</Button>
+            </View>
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheet>
     </ImageBackground >
   );
 }
 
-const TransactionBottom = ({ navigation }) => {
+const InformationBottom = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
+
+  const dispatch = useDispatch()
+  const localStorage = useLocalStorage()
 
   const bottomSheetRef = useRef(null);
 
@@ -340,13 +393,13 @@ const TransactionBottom = ({ navigation }) => {
     watch,
     handleSubmit,
 
-    formState: { errors, dirtyFields }
+    formState: { dirtyFields }
   } = useForm({
     resolver: yupResolver(informationSchema),
     defaultValues: {
       type: null,
 
-      harvested_at: new Date(),
+      date_harvest: new Date(),
 
       category: null,
       farm: null,
@@ -357,9 +410,6 @@ const TransactionBottom = ({ navigation }) => {
       plate: null
     }
   })
-
-  console.log(errors)
-  console.log("Data: ", watch())
 
   const { open: categoryOpen, onToggle: categoryToggle } = useDisclosure()
   const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
@@ -372,7 +422,7 @@ const TransactionBottom = ({ navigation }) => {
   const onSubmit = (data) => {
     const {
       type,
-      harvested_at,
+      date_harvest,
       category: { id: category_id },
       farm: { id: farm_id },
       building: { id: building_id },
@@ -384,9 +434,23 @@ const TransactionBottom = ({ navigation }) => {
 
     db.transactionAsync(async (trxn) => {
 
-      await trxn.executeSqlAsync("INSERT INTO `informations` (`user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `checker_id`, `buyer_id`, `plate_id`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [1, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, dayjs(harvested_at).format("YYYY-MM-DD") + 1, dayjs(harvested_at).format("YYYY-MM-DD")])
+      const harvested_at = dayjs(date_harvest).format("YYYY-MM-DD")
+
+      const userData = await localStorage.getItem("user")
+      const {
+        id: user_id
+      } = JSON.parse(userData)
+
+      const seriesData = await trxn.executeSqlAsync("SELECT `id` FROM `informations` WHERE `harvested_at` = ?", [harvested_at])
+      const series_no = dayjs(harvested_at).format("YYYYMMDD") +
+        ++seriesData.rows.length
+
+      const { insertId: id } = await trxn.executeSqlAsync("INSERT INTO `informations` (`user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `checker_id`, `buyer_id`, `plate_id`, `type`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, type, series_no, harvested_at])
+
+      dispatch(setInformationData({ id, user_id, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, type, series_no, harvested_at }))
+
+      bottomSheetRef.current.close()
     })
-    // bottomSheetRef.current.close()
   }
 
   return (
@@ -457,7 +521,7 @@ const TransactionBottom = ({ navigation }) => {
 
         <View style={{ marginTop: 52, marginBottom: 52, paddingLeft: 16, paddingRight: 16, gap: 16 }}>
           <Controller
-            name="harvested_at"
+            name="date_harvest"
             control={control}
             render={({ field: { value, onChange }, fieldState: { isDirty } }) => {
 
@@ -622,8 +686,8 @@ const TransactionBottom = ({ navigation }) => {
               !watch("checker") ||
               !watch("buyer") ||
               !watch("plate") ||
-              !watch("harvested_at") ||
-              !dirtyFields?.harvested_at
+              !watch("date_harvest") ||
+              !dirtyFields?.date_harvest
             }
             onPress={handleSubmit(onSubmit)}
           >

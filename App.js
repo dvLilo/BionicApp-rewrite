@@ -142,6 +142,9 @@
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
+import { Provider } from 'react-redux'
+import { store } from './app/store'
+
 import { Provider as PaperProvider } from 'react-native-paper'
 
 import { ToastProvider } from './context/ToastProvider'
@@ -155,13 +158,15 @@ import MainStackNavigator from './navigation/Main.StackNavigator'
 const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider>
-        <ToastProvider>
-          <NavigationContainer>
-            <MainStackNavigator />
-          </NavigationContainer>
-        </ToastProvider>
-      </PaperProvider>
+      <Provider store={store}>
+        <PaperProvider>
+          <ToastProvider>
+            <NavigationContainer>
+              <MainStackNavigator />
+            </NavigationContainer>
+          </ToastProvider>
+        </PaperProvider>
+      </Provider>
     </GestureHandlerRootView>
   )
 }
