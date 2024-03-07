@@ -139,6 +139,10 @@
 //   }
 // })
 
+import { useEffect } from 'react'
+
+import * as Crypto from 'expo-crypto'
+import Bcrypt from 'bcryptjs'
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
@@ -155,7 +159,19 @@ import {
 
 import MainStackNavigator from './navigation/Main.StackNavigator'
 
+
+
 const App = () => {
+  useEffect(() => {
+    (async () => {
+      Bcrypt.setRandomFallback(async (len) => {
+        const randomBytes = await Crypto.getRandomBytesAsync(len)
+
+        return new Uint8Array(randomBytes)
+      })
+    })()
+  }, [])
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>

@@ -34,7 +34,7 @@ import useLocalStorage from '../../hooks/useLocalStorage'
 
 import SafeAreaView from '../../components/SafeAreaView'
 
-import bcrypt from 'react-native-bcrypt'
+import Bcrypt from 'bcryptjs'
 
 const schema = yup.object().shape({
   username: yup.string().required().label("Username"),
@@ -158,7 +158,7 @@ const Login = ({ navigation }) => {
 
         const compareAsync = (string, hash) => {
           return new Promise((resolve, reject) => {
-            bcrypt.compare(string, hash, (error, result) => {
+            Bcrypt.compare(string, hash, (error, result) => {
               if (error) {
                 reject(error)
               }
