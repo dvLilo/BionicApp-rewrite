@@ -1,21 +1,29 @@
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+
+import { useFocusEffect } from "@react-navigation/native"
 
 import * as SQLite from "expo-sqlite"
+
+import dayjs from "dayjs"
 
 import {
   View,
   StyleSheet,
   ImageBackground,
   Image,
-  BackHandler
+  BackHandler,
+  FlatList
 } from "react-native"
 
 import {
   Button,
+  IconButton,
   Text
 } from "react-native-paper"
 
 import FeatherIcons from "@expo/vector-icons/Feather"
+
+import { Swipeable } from "react-native-gesture-handler"
 
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet"
 
@@ -23,9 +31,61 @@ import { LinearGradient } from "expo-linear-gradient"
 
 import SafeAreaView from "../../components/SafeAreaView"
 
-const Dashboard = () => {
+const Dashboard = ({ navigation }) => {
+
+  const db = SQLite.openDatabase("bionic.db")
 
   const bottomSheetRef = useRef(null)
+
+  const [transactions, setTransactions] = useState([])
+
+  useFocusEffect(
+    useCallback(() => {
+      db.transactionAsync(async (trxn) => {
+        try {
+          const {
+            rows: CATEGORIES
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories`")
+
+          const {
+            rows: FARMS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms`")
+
+          const {
+            rows: BUILDINGS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings`")
+
+          const {
+            rows: PLATES
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates`")
+
+          // await trxn.executeSqlAsync("UPDATE `informations` SET `is_synced` = 0 WHERE `id` = 1")
+
+          const { rows } = await trxn.executeSqlAsync("SELECT * FROM `informations` ORDER BY `id` DESC")
+          const res = rows.map((item) => {
+
+            const category = CATEGORIES.find((categoryItem) => categoryItem.id === item.category_id)
+            const farm = FARMS.find((farmItem) => farmItem.id === item.farm_id)
+            const building = BUILDINGS.find((buildingItem) => buildingItem.id === item.building_id)
+            const plate = PLATES.find((plateItem) => plateItem.id === item.plate_id)
+
+            return {
+              ...item,
+              category,
+              farm,
+              building,
+              plate
+            }
+          })
+
+          setTransactions(res)
+          // console.log(res)
+        } catch (error) {
+          console.log(error)
+        }
+      })
+    }, [navigation])
+  )
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true)
@@ -54,11 +114,34 @@ const Dashboard = () => {
 
           <Text variant="titleMedium">Recent transactions</Text>
 
-          <View style={{ backgroundColor: "rgba(0, 0, 0, 0.76)", width: "88%", height: 32, borderRadius: 12 }} />
-          <View style={{ backgroundColor: "rgba(0, 0, 0, 0.76)", width: "82%", height: 32, borderRadius: 12 }} />
-          <View style={{ backgroundColor: "rgba(0, 0, 0, 0.76)", width: "90%", height: 32, borderRadius: 12 }} />
-          <View style={{ backgroundColor: "rgba(0, 0, 0, 0.76)", width: "100%", height: 32, borderRadius: 12 }} />
-          <View style={{ backgroundColor: "rgba(0, 0, 0, 0.76)", width: "88%", height: 32, borderRadius: 12 }} />
+          <FlatList
+            data={transactions}
+            renderItem={({ item }) => (
+              <Swipeable>
+                <View style={{ backgroundColor: "#ffffff", flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 42, marginBottom: 8, paddingVertical: 8, paddingHorizontal: 16, borderColor: "#fffafa", borderWidth: 1, borderRadius: 6, elevation: 1 }}>
+                  <View style={{ flexDirection: "column", gap: -4 }}>
+                    <Text variant="titleMedium" style={{ color: "#646ecb", fontWeight: 700 }}>TRN. NO. {item.id}</Text>
+                    <Text variant="labelMedium" style={{ opacity: 0.76 }}>{item.farm.name} - {item.building.name}</Text>
+                    <Text variant="labelSmall" style={{ opacity: 0.64 }}>{dayjs(item.harvested_at).format("MMM. DD, YYYY")}</Text>
+                  </View>
+
+                  <IconButton
+                    mode="contained"
+                    icon={({ color, size }) => <FeatherIcons name={item.is_synced ? "check" : "refresh-ccw"} color={color} size={size} />}
+                    size={16}
+                    onPress={() => { }}
+                  />
+                </View>
+              </Swipeable>
+            )}
+            ListEmptyComponent={
+              <View style={{ flexDirection: "column", alignItems: "center", paddingVertical: 16 }}>
+                <FeatherIcons name="info" size={36} color="#eb5160" />
+                <Text variant="bodyLarge" style={{ fontWeight: 700, opacity: 0.88 }}>No records found!</Text>
+              </View>
+            }
+            keyExtractor={(_, index) => index}
+          />
         </View>
       </SafeAreaView>
 
