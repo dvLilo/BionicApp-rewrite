@@ -6,6 +6,8 @@ import * as SQLite from "expo-sqlite"
 
 import dayjs from "dayjs"
 
+import { useSelector } from "react-redux"
+
 import {
   View,
   StyleSheet,
@@ -34,6 +36,9 @@ import SafeAreaView from "../../components/SafeAreaView"
 const Dashboard = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
+
+  const user = useSelector((state) => state.user)
+  console.log(user)
 
   const bottomSheetRef = useRef(null)
 
@@ -168,6 +173,38 @@ const Dashboard = ({ navigation }) => {
         </BottomSheetScrollView>
       </BottomSheet>
     </ImageBackground >
+  )
+}
+
+const TransactionBottom = ({ navigation }) => {
+
+  const db = SQLite.openDatabase("bionic.db")
+
+  const bottomSheetRef = useRef(null)
+
+  const [transactions, setTransactions] = useState([])
+
+  return (
+    <BottomSheet
+      index={-1}
+      ref={bottomSheetRef}
+      snapPoints={["36"]}
+      backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
+      enablePanDownToClose
+    >
+      <BottomSheetScrollView style={{ backgroundColor: "#effcff", }}>
+        <View style={{ alignItems: "center" }}>
+          <View style={{ width: 88, height: 88, justifyContent: "center", alignItems: "center", borderColor: "#646ecb", borderWidth: 4, borderRadius: 64, marginTop: 16, marginBottom: 16 }}>
+            <View style={{ backgroundColor: "#646ecb", width: 72, height: 72, justifyContent: "center", alignItems: "center", borderRadius: 64 }}>
+              <FeatherIcons name="refresh-cw" color="#fffafa" size={42} />
+            </View>
+          </View>
+
+          <Text variant="titleLarge">Syncing!</Text>
+          <Text variant="titleSmall" style={{ width: "76%" }}>Please wait whilst your masterlist and transaction are being synchronized...</Text>
+        </View>
+      </BottomSheetScrollView>
+    </BottomSheet>
   )
 }
 

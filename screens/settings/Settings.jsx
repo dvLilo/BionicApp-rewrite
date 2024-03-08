@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { useDispatch } from 'react-redux'
+import { resetUserData } from '../../features/user/user.slice'
+
 import {
   View,
   StyleSheet,
@@ -32,6 +35,7 @@ const Settings = ({ navigation }) => {
   const bottomSheetRef = useRef(null)
 
   const toast = useToast()
+  const dispatch = useDispatch()
   const localStorage = useLocalStorage()
 
   const [userData, setUserData] = useState(null)
@@ -87,6 +91,8 @@ const Settings = ({ navigation }) => {
     if (!isBiometricEnabled) {
       await localStorage.removeItem("user")
     }
+
+    dispatch(resetUserData())
 
     navigation.navigate("Login")
   }

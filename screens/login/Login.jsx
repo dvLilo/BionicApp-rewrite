@@ -12,6 +12,9 @@ import { yupResolver } from '@hookform/resolvers/yup'
 
 import { Controller, useForm } from 'react-hook-form'
 
+import { useDispatch } from 'react-redux'
+import { setUserData } from '../../features/user/user.slice'
+
 import {
   View,
   StyleSheet,
@@ -46,6 +49,7 @@ const Login = ({ navigation }) => {
   const db = SQLite.openDatabase("bionic.db")
 
   const toast = useToast()
+  const dispatch = useDispatch()
   const localStorage = useLocalStorage()
 
   const {
@@ -173,6 +177,8 @@ const Login = ({ navigation }) => {
         if (match) {
           localStorage.setItem("user", JSON.stringify(userData))
 
+          dispatch(setUserData(userData))
+
           reset()
           setIsLoading(false)
 
@@ -202,6 +208,10 @@ const Login = ({ navigation }) => {
     const auth = await LocalAuthentication.authenticateAsync()
 
     if (auth.success) {
+      const userData = await localStorage.getItem("user").then((data) => JSON.parse(data))
+
+      dispatch(setUserData(userData))
+
       navigation.navigate("Dashboard")
     }
   }
