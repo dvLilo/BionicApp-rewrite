@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 
 import * as SQLite from "expo-sqlite"
 
@@ -6,12 +6,34 @@ import * as yup from "yup"
 
 import dayjs from "dayjs"
 
-import { View, StyleSheet, ImageBackground, FlatList, Image, TouchableOpacity } from "react-native"
+import {
+  View,
+  StyleSheet,
+  ImageBackground,
+  FlatList,
+  Image,
+  TouchableOpacity
+} from "react-native"
+
+import {
+  Button,
+  Divider,
+  HelperText,
+  Text,
+  TextInput,
+  TouchableRipple
+} from "react-native-paper"
+
+import { useFocusEffect } from "@react-navigation/native"
+
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet"
-import { Button, Divider, HelperText, Text, TextInput, TouchableRipple } from "react-native-paper"
+
 import { LinearGradient } from "expo-linear-gradient"
+
 import DropDownPicker from "react-native-dropdown-picker"
+
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker"
+
 import { Swipeable } from "react-native-gesture-handler"
 
 import FeatherIcons from "@expo/vector-icons/Feather"
@@ -36,7 +58,6 @@ const informationSchema = yup.object().shape({
   farm: yup.object().required().label("Farm"),
   building: yup.object().required().label("Building no."),
   leadman: yup.object().required().label("Leadman"),
-  checker: yup.object().required().label("Checker"),
   buyer: yup.object().required().label("Buyer"),
   plate: yup.object().required().label("Plate no.")
 })
@@ -48,45 +69,41 @@ const transactionSchema = yup.object().shape({
   weight: yup.number().required().label("Weight").typeError("Invalid weight value.")
 })
 
-const CATEGORIES = [
-  { id: 1, label: "BYAHERO", value: "BYAHERO" },
-  { id: 2, label: "RDF", value: "RDF" }
-]
+// const CATEGORIES = [
+//   { id: 1, label: "BYAHERO", value: "BYAHERO" },
+//   { id: 2, label: "RDF", value: "RDF" }
+// ]
 
-const FARMS = [
-  { id: 1, label: "LARA 1", value: "LARA 1" },
-  { id: 2, label: "LARA 2", value: "LARA 2" },
-  { id: 3, label: "PULONG SANTOL", value: "PULONG SANTOL" }
-]
+// const FARMS = [
+//   { id: 1, label: "LARA 1", value: "LARA 1" },
+//   { id: 2, label: "LARA 2", value: "LARA 2" },
+// ]
 
-const BUILDINGS = [
-  { id: 1, label: "BLDG 1", value: "BLDG 1" },
-  { id: 2, label: "BLDG 2", value: "BLDG 2" }
-]
+// const BUILDINGS = [
+//   { id: 1, label: "BLDG 1", value: "BLDG 1" },
+//   { id: 2, label: "BLDG 2", value: "BLDG 2" }
+// ]
 
-const LEADMANS = [
-  { id: 1, label: "LEADMAN 1", value: "LEADMAN 1" },
-  { id: 2, label: "LEADMAN 2", value: "LEADMAN 2" }
-]
+// const LEADMANS = [
+//   { id: 1, label: "LEADMAN 1", value: "LEADMAN 1" },
+//   { id: 2, label: "LEADMAN 2", value: "LEADMAN 2" }
+// ]
 
-const CHECKERS = [
-  { id: 1, label: "CHECKER 1", value: "CHECKER 1" },
-  { id: 2, label: "CHECKER 2", value: "CHECKER 2" }
-]
+// const BUYERS = [
+//   { id: 1, label: "BUYER 1", value: "BUYER 1" },
+//   { id: 2, label: "BUYER 2", value: "BUYER 2" }
+// ]
 
-const BUYERS = [
-  { id: 1, label: "BUYER 1", value: "BUYER 1" },
-  { id: 2, label: "BUYER 2", value: "BUYER 2" }
-]
-
-const PLATES = [
-  { id: 1, label: "AAV 3002", value: "AAV 3002" },
-  { id: 2, label: "CAR 1002", value: "CAR 1002" }
-]
+// const PLATES = [
+//   { id: 1, label: "AAV 3002", value: "AAV 3002" },
+//   { id: 2, label: "CAR 1002", value: "CAR 1002" }
+// ]
 
 const Transaction = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
+
+  const dispatch = useDispatch()
 
   const information = useSelector((state) => state.information)
 
@@ -167,6 +184,8 @@ const Transaction = ({ navigation }) => {
   const onCancel = () => {
     db.transactionAsync(async (trxn) => {
       await trxn.executeSqlAsync("DELETE FROM `informations` WHERE `id` = ?", [information.id])
+
+      dispatch(resetInformationData())
 
       navigation.goBack()
     })
@@ -405,11 +424,57 @@ const InformationBottom = ({ navigation }) => {
       farm: null,
       building: null,
       leadman: null,
-      checker: null,
       buyer: null,
       plate: null
     }
   })
+
+  // console.log(watch("category"))
+
+  const [CATEGORIES, setCategories] = useState([])
+  const [FARMS, setFarms] = useState([])
+  const [BUILDINGS, setBuildings] = useState([])
+  const [LEADMANS, setLeadmans] = useState([])
+  const [BUYERS, setBuyers] = useState([])
+  const [PLATES, setPlates] = useState([])
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        db.transactionAsync(async (trxn) => {
+          const {
+            rows: CATEGORIES_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories` WHERE `deleted_at` IS NULL")
+          setCategories(CATEGORIES_ROWS)
+
+          const {
+            rows: FARMS_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms` WHERE `deleted_at` IS NULL")
+          setFarms(FARMS_ROWS)
+
+          const {
+            rows: BUILDINGS_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings` WHERE `deleted_at` IS NULL")
+          setBuildings(BUILDINGS_ROWS)
+
+          const {
+            rows: LEADMANS_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `leadmans` WHERE `deleted_at` IS NULL")
+          setLeadmans(LEADMANS_ROWS)
+
+          const {
+            rows: BUYERS_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buyers` WHERE `deleted_at` IS NULL")
+          setBuyers(BUYERS_ROWS)
+
+          const {
+            rows: PLATES_ROWS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates` WHERE `deleted_at` IS NULL")
+          setPlates(PLATES_ROWS)
+        })
+      })()
+    }, [navigation])
+  )
 
   const { open: categoryOpen, onToggle: categoryToggle } = useDisclosure()
   const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
@@ -427,7 +492,6 @@ const InformationBottom = ({ navigation }) => {
       farm: { id: farm_id },
       building: { id: building_id },
       leadman: { id: leadman_id },
-      checker: { id: checker_id },
       buyer: { id: buyer_id },
       plate: { id: plate_id }
     } = data
@@ -445,9 +509,9 @@ const InformationBottom = ({ navigation }) => {
       const series_no = dayjs(harvested_at).format("YYYYMMDD") +
         ++seriesData.rows.length
 
-      const { insertId: id } = await trxn.executeSqlAsync("INSERT INTO `informations` (`user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `checker_id`, `buyer_id`, `plate_id`, `type`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, type, series_no, harvested_at])
+      const { insertId: id } = await trxn.executeSqlAsync("INSERT INTO `informations` (`user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `buyer_id`, `plate_id`, `type`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, category_id, farm_id, building_id, leadman_id, buyer_id, plate_id, type, series_no, harvested_at])
 
-      dispatch(setInformationData({ id, user_id, category_id, farm_id, building_id, leadman_id, checker_id, buyer_id, plate_id, type, series_no, harvested_at }))
+      dispatch(setInformationData({ id, user_id, category_id, farm_id, building_id, leadman_id, buyer_id, plate_id, type, series_no, harvested_at }))
 
       bottomSheetRef.current.close()
     })
@@ -557,10 +621,11 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Category"
                 listMode="SCROLLVIEW"
                 open={categoryOpen}
-                value={value?.value}
+                value={value?.name}
                 items={CATEGORIES}
                 setOpen={categoryToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={999}
               />
@@ -575,10 +640,11 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Farm"
                 listMode="SCROLLVIEW"
                 open={farmOpen}
-                value={value?.value}
+                value={value?.name}
                 items={FARMS}
                 setOpen={farmToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={888}
               />
@@ -593,10 +659,11 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Building No."
                 listMode="SCROLLVIEW"
                 open={buildingOpen}
-                value={value?.value}
+                value={value?.name}
                 items={BUILDINGS}
                 setOpen={buildingToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={777}
               />
@@ -611,30 +678,13 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Leadman"
                 listMode="SCROLLVIEW"
                 open={leadmanOpen}
-                value={value?.value}
+                value={value?.name}
                 items={LEADMANS}
                 setOpen={leadmanToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={666}
-              />
-            )}
-          />
-
-          <Controller
-            name="checker"
-            control={control}
-            render={({ field: { value, onChange } }) => (
-              <DropDownPicker
-                placeholder="Select Checker"
-                listMode="SCROLLVIEW"
-                open={checkerOpen}
-                value={value?.value}
-                items={CHECKERS}
-                setOpen={checkerToggle}
-                onSelectItem={onChange}
-
-                zIndex={555}
               />
             )}
           />
@@ -647,10 +697,11 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Buyer"
                 listMode="SCROLLVIEW"
                 open={buyerOpen}
-                value={value?.value}
+                value={value?.name}
                 items={BUYERS}
                 setOpen={buyerToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={444}
               />
@@ -665,10 +716,11 @@ const InformationBottom = ({ navigation }) => {
                 placeholder="Select Plate No."
                 listMode="SCROLLVIEW"
                 open={plateOpen}
-                value={value?.value}
+                value={value?.name}
                 items={PLATES}
                 setOpen={plateToggle}
                 onSelectItem={onChange}
+                schema={{ label: "name", value: "name" }}
 
                 zIndex={333}
               />
@@ -683,7 +735,6 @@ const InformationBottom = ({ navigation }) => {
               !watch("farm") ||
               !watch("building") ||
               !watch("leadman") ||
-              !watch("checker") ||
               !watch("buyer") ||
               !watch("plate") ||
               !watch("date_harvest") ||

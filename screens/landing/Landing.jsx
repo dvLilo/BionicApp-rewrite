@@ -23,26 +23,6 @@ const Landing = ({ navigation }) => {
 
   const bottomSheetRef = useRef(null);
 
-  // useEffect(() => {
-  //   (async () => {
-
-  //     db.transactionAsync(async (trxn) => {
-  //       try {
-  //         const res = await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
-  //         // const res = await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-  //         // const res = await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) values (?, ?)", [1, "LARA 1"])
-  //         // const res = await trxn.executeSqlAsync("SELECT * FROM `farms`")
-
-  //         console.log(res)
-  //       } catch (error) {
-  //         console.log("Error: ", error)
-  //       }
-
-
-  //   })
-  //     })()
-  // }, [])
-
   const initializeDatabaseSetup = (index) => {
     if (index === 0) {
       db.execAsync([{ sql: "PRAGMA foreign_keys = ON", args: [] }], false)
@@ -54,39 +34,55 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `categories`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
-          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plate`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buyers`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
+          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
 
-          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `informations`")
-          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `transactions`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `informations`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `transactions`")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `fullname` VARCHAR(255) NOT NULL, `username` VARCHAR(255) NOT NULL, `password` VARCHAR(255) NOT NULL, `role` VARCHAR(255) NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-          // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `fullname` VARCHAR(255) NOT NULL, `username` VARCHAR(255) NOT NULL, `password` VARCHAR(255) NOT NULL, `role` VARCHAR(255) NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `informations` (`id` INTEGER PRIMARY KEY, `user_id` INTEGER NOT NULL, `category_id` INTEGER NOT NULL, `farm_id` INTEGER NOT NULL, `building_id` INTEGER NOT NULL, `leadman_id` INTEGER NOT NULL, `checker_id` INTEGER NOT NULL, `buyer_id` INTEGER NOT NULL, `plate_id` INTEGER NOT NULL, `type` VARCHAR(255) NOT NULL, `series_no` INTEGER NOT NULL, `harvested_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buyers` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `informations` (`id` INTEGER PRIMARY KEY, `is_synced` INTEGER NOT NULL DEFAULT 0, `user_id` INTEGER NOT NULL, `category_id` INTEGER NOT NULL, `farm_id` INTEGER NOT NULL, `building_id` INTEGER NOT NULL, `leadman_id` INTEGER NOT NULL, `buyer_id` INTEGER NOT NULL, `plate_id` INTEGER NOT NULL, `type` VARCHAR(255) NOT NULL, `series_no` INTEGER NOT NULL, `harvested_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY, `information_id` INTEGER NOT NULL, `batch_no` INTEGER NOT NULL, `heads` REAL NOT NULL, `weight` REAL NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (`information_id`) REFERENCES `informations` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)")
 
-          // sample data for infomation table
-          // await trxn.executeSqlAsync("INSERT INTO `informations` (`id`, `user_id`, `category_id`, `farm_id`, `building_id`, `leadman_id`, `checker_id`, `buyer_id`, `plate_id`, `series_no`, `harvested_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [1, 1, 1, 1, 1, 1, 1, 1, 1, 3042401, "04-03-2024"])
+          // sample data
+          // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
 
-          // sample data for transaction table
-          // await trxn.executeSqlAsync("INSERT INTO `transactions` (`id`, `information_id`, `batch_no`, `heads`, `weight`) VALUES (?, ?, ?, ?, ?)", [1, 1, 1, 20, 36.8])
+          // await trxn.executeSqlAsync("INSERT INTO `categories` (`sync_id`, `name`) VALUES (?, ?)", [1, "BYAHERO"])
+          // await trxn.executeSqlAsync("INSERT INTO `categories` (`sync_id`, `name`) VALUES (?, ?)", [2, "RDF"])
 
-          // await trxn.executeSqlAsync("DELETE FROM `informations` WHERE `id` = 1")
+          // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [1, "LARA 1"])
+          // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [2, "LARA 2"])
 
-          // const informations = await trxn.executeSqlAsync("SELECT * FROM `informations`")
-          // console.log("informations: ", informations.rows)
+          // await trxn.executeSqlAsync("INSERT INTO `buildings` (`sync_id`, `name`) VALUES (?, ?)", [1, "BLDG 1"])
+          // await trxn.executeSqlAsync("INSERT INTO `buildings` (`sync_id`, `name`) VALUES (?, ?)", [2, "BLDG 2"])
 
-          // const transactions = await trxn.executeSqlAsync("SELECT * FROM `transactions`")
-          // console.log("transactions: ", transactions.rows)
+          // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [1, "J. CASTRO"])
+          // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [2, "B. TAMAYO"])
 
+          // await trxn.executeSqlAsync("INSERT INTO `leadmans` (`sync_id`, `name`) VALUES (?, ?)", [1, "CRIS B."])
+          // await trxn.executeSqlAsync("INSERT INTO `leadmans` (`sync_id`, `name`) VALUES (?, ?)", [2, "WILSON N."])
+
+          // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [1, "AAV 3002"])
+          // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [2, "CAR 1002"])
+
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `plates`")
+          // console.log(rows)
 
         } catch (error) {
           console.log("Create database table error: ", error)
