@@ -36,7 +36,7 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buyers`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
-          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
 
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `informations`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `transactions`")
@@ -81,7 +81,7 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [1, "AAV 3002"])
           // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [2, "CAR 1002"])
 
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `plates`")
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `buyers`")
           // console.log(rows)
 
         } catch (error) {
@@ -99,7 +99,7 @@ const Landing = ({ navigation }) => {
 
           <View>
             <Text variant="headlineLarge" style={{ fontWeight: 700, letterSpacing: 2 }}>Bionic Distro</Text>
-            <Text variant="bodyMedium" style={{ marginBottom: 48 }}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nulla quaerat delectus voluptas exercitationem! Sunt delectus voluptatum saepe.</Text>
+            <Text variant="bodyMedium" style={{ marginBottom: 48 }}>Bionic Distro redefines farm management for poultry and swine with its intuitive tally sheet app. Whether offline or online, this versatile tool enables farmers to effortlessly record and sync vital data, fostering real-time insights and efficient operations.</Text>
 
             <Button mode="contained" style={styles.button} onPress={() => navigation.navigate("Login")}>
               <Text variant="labelLarge" style={styles.label}>Log in</Text>

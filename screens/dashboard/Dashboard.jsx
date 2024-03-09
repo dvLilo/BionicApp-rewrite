@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react"
 
 import { useFocusEffect } from "@react-navigation/native"
 
@@ -14,18 +14,19 @@ import {
   ImageBackground,
   Image,
   BackHandler,
-  FlatList
+  FlatList,
+  TouchableHighlight,
+  TouchableOpacity
 } from "react-native"
 
 import {
   Button,
   IconButton,
-  Text
+  Text,
+  TouchableRipple
 } from "react-native-paper"
 
 import FeatherIcons from "@expo/vector-icons/Feather"
-
-import { Swipeable } from "react-native-gesture-handler"
 
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet"
 
@@ -37,12 +38,11 @@ const Dashboard = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
 
-  const user = useSelector((state) => state.user)
-  console.log(user)
-
   const bottomSheetRef = useRef(null)
+  const transactionsSheetRef = useRef(null)
 
   const [transactions, setTransactions] = useState([])
+  const [transaction, setTransaction] = useState(null)
 
   useFocusEffect(
     useCallback(() => {
@@ -50,19 +50,27 @@ const Dashboard = ({ navigation }) => {
         try {
           const {
             rows: CATEGORIES
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories`")
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories` WHERE `deleted_at` IS NULL")
 
           const {
             rows: FARMS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms`")
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms` WHERE `deleted_at` IS NULL")
 
           const {
             rows: BUILDINGS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings`")
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings` WHERE `deleted_at` IS NULL")
+
+          const {
+            rows: LEADMANS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `leadmans` WHERE `deleted_at` IS NULL")
+
+          const {
+            rows: BUYERS
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buyers` WHERE `deleted_at` IS NULL")
 
           const {
             rows: PLATES
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates`")
+          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates` WHERE `deleted_at` IS NULL")
 
           // await trxn.executeSqlAsync("UPDATE `informations` SET `is_synced` = 0 WHERE `id` = 1")
 
@@ -72,6 +80,8 @@ const Dashboard = ({ navigation }) => {
             const category = CATEGORIES.find((categoryItem) => categoryItem.id === item.category_id)
             const farm = FARMS.find((farmItem) => farmItem.id === item.farm_id)
             const building = BUILDINGS.find((buildingItem) => buildingItem.id === item.building_id)
+            const leadman = LEADMANS.find((leadmanItem) => leadmanItem.id === item.leadman_id)
+            const buyer = BUYERS.find((buyerItem) => buyerItem.id === item.buyer_id)
             const plate = PLATES.find((plateItem) => plateItem.id === item.plate_id)
 
             return {
@@ -79,6 +89,8 @@ const Dashboard = ({ navigation }) => {
               category,
               farm,
               building,
+              leadman,
+              buyer,
               plate
             }
           })
@@ -122,22 +134,24 @@ const Dashboard = ({ navigation }) => {
           <FlatList
             data={transactions}
             renderItem={({ item }) => (
-              <Swipeable>
-                <View style={{ backgroundColor: "#ffffff", flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 42, marginBottom: 8, paddingVertical: 8, paddingHorizontal: 16, borderColor: "#fffafa", borderWidth: 1, borderRadius: 6, elevation: 1 }}>
-                  <View style={{ flexDirection: "column", gap: -4 }}>
-                    <Text variant="titleMedium" style={{ color: "#646ecb", fontWeight: 700 }}>TRN. NO. {item.id}</Text>
-                    <Text variant="labelMedium" style={{ opacity: 0.76 }}>{item.farm.name} - {item.building.name}</Text>
-                    <Text variant="labelSmall" style={{ opacity: 0.64 }}>{dayjs(item.harvested_at).format("MMM. DD, YYYY")}</Text>
-                  </View>
+              <View style={{ minHeight: 42, marginBottom: 4 }}>
+                <TouchableRipple style={{ borderRadius: 6 }} onPress={() => { setTransaction(item); transactionsSheetRef.current.collapse() }} borderless>
+                  <View style={{ backgroundColor: "#ffffff", flexDirection: "row", flexGrow: 1, justifyContent: "space-between", alignItems: "center", borderColor: "#f0f0f0", borderWidth: 1, borderRadius: 6, paddingVertical: 8, paddingHorizontal: 16 }}>
+                    <View style={{ flexDirection: "column", gap: -4 }}>
+                      <Text variant="titleMedium" style={{ color: "#646ecb", fontWeight: 700 }}>TRN. NO. {item.id}</Text>
+                      <Text variant="labelMedium" style={{ opacity: 0.76 }}>{item.farm.name} - {item.building.name}</Text>
+                      <Text variant="labelSmall" style={{ opacity: 0.64 }}>{dayjs(item.harvested_at).format("MMM. DD, YYYY")}</Text>
+                    </View>
 
-                  <IconButton
-                    mode="contained"
-                    icon={({ color, size }) => <FeatherIcons name={item.is_synced ? "check" : "refresh-ccw"} color={color} size={size} />}
-                    size={16}
-                    onPress={() => { }}
-                  />
-                </View>
-              </Swipeable>
+                    <IconButton
+                      mode="contained"
+                      icon={({ color, size }) => <FeatherIcons name={item.is_synced ? "check" : "refresh-ccw"} color={color} size={size} />}
+                      size={16}
+                      onPress={() => { }}
+                    />
+                  </View>
+                </TouchableRipple>
+              </View>
             )}
             ListEmptyComponent={
               <View style={{ flexDirection: "column", alignItems: "center", paddingVertical: 16 }}>
@@ -150,6 +164,7 @@ const Dashboard = ({ navigation }) => {
         </View>
       </SafeAreaView>
 
+      <TransactionBottom ref={transactionsSheetRef} transaction={transaction} />
 
 
       <BottomSheet
@@ -176,37 +191,100 @@ const Dashboard = ({ navigation }) => {
   )
 }
 
-const TransactionBottom = ({ navigation }) => {
+const TransactionBottom = forwardRef(({ navigation, transaction }, ref) => {
 
   const db = SQLite.openDatabase("bionic.db")
 
-  const bottomSheetRef = useRef(null)
-
   const [transactions, setTransactions] = useState([])
+
+  useEffect(() => {
+    (async () => {
+      if (transaction) {
+        db.transactionAsync(async (trxn) => {
+          const {
+            rows
+          } = await trxn.executeSqlAsync("SELECT `id`, `batch_no`, `heads`, `weight` FROM `transactions` WHERE `information_id` = ?", [transaction.id])
+
+          setTransactions(rows)
+        })
+      }
+    })()
+  }, [transaction])
 
   return (
     <BottomSheet
       index={-1}
-      ref={bottomSheetRef}
-      snapPoints={["36"]}
+      ref={ref}
+      snapPoints={["48", "90"]}
       backdropComponent={(props) => <BottomSheetBackdrop {...props} pressBehavior="none" appearsOnIndex={0} disappearsOnIndex={-1} />}
       enablePanDownToClose
     >
-      <BottomSheetScrollView style={{ backgroundColor: "#effcff", }}>
-        <View style={{ alignItems: "center" }}>
-          <View style={{ width: 88, height: 88, justifyContent: "center", alignItems: "center", borderColor: "#646ecb", borderWidth: 4, borderRadius: 64, marginTop: 16, marginBottom: 16 }}>
-            <View style={{ backgroundColor: "#646ecb", width: 72, height: 72, justifyContent: "center", alignItems: "center", borderRadius: 64 }}>
-              <FeatherIcons name="refresh-cw" color="#fffafa" size={42} />
-            </View>
+      <BottomSheetScrollView>
+        <ImageBackground imageStyle={{ resizeMode: "cover", left: -200 }} style={{ height: 312, overflow: "hidden" }} source={require('../../assets/bottom.jpg')}>
+          <LinearGradient colors={["transparent", "transparent", "#ffffff"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1, justifyContent: "flex-end", marginBottom: -1, paddingHorizontal: 16 }}>
+            <Text
+              variant="labelLarge"
+              style={{
+                backgroundColor: "#646ecb",
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 16,
+                color: "#fffafa",
+                textTransform: "capitalize",
+                alignSelf: "flex-start",
+              }}
+            >
+              <FeatherIcons name="box" size={16} /> {transaction?.type}
+            </Text>
+
+            <Text variant="headlineMedium" style={{ fontWeight: 700 }}>{transaction?.farm.name} - {transaction?.building.name}</Text>
+            <Text variant="labelMedium" style={{ opacity: 0.64 }}>{transaction?.category.name} - {transaction?.plate.name}</Text>
+          </LinearGradient>
+        </ImageBackground>
+
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, marginVertical: 32 }}>
+          <View style={{ width: 108, justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
+            <FeatherIcons name="calendar" size={28} style={{ opacity: 0.76 }} />
+            <Text variant="labelLarge" style={{ fontWeight: 700 }}>{dayjs(transaction?.harvested_at).format("MMM. DD, YYYY").toUpperCase()}</Text>
           </View>
 
-          <Text variant="titleLarge">Syncing!</Text>
-          <Text variant="titleSmall" style={{ width: "76%" }}>Please wait whilst your masterlist and transaction are being synchronized...</Text>
+          <View style={{ width: 108, justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
+            <FeatherIcons name="user" size={28} style={{ opacity: 0.76 }} />
+            <Text variant="labelLarge" style={{ fontWeight: 700 }}>{transaction?.leadman.name}</Text>
+          </View>
+
+          <View style={{ width: 108, justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
+            <FeatherIcons name="shopping-bag" size={28} style={{ opacity: 0.76 }} />
+            <Text variant="labelLarge" style={{ fontWeight: 700 }}>{transaction?.buyer.name}</Text>
+          </View>
+        </View>
+
+        <View style={{ paddingBottom: 32 }}>
+          {
+            transactions?.map((item, index) => (
+              <View style={{ marginVertical: 6, paddingHorizontal: 8 }} key={index}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", borderLeftColor: "#646ecb", borderLeftWidth: 4, minHeight: 64, paddingHorizontal: 8, gap: 16 }}>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text variant="bodyMedium">Batch No.</Text>
+                    <Text variant="displaySmall">{item.batch_no.toString().padStart(2, '0')}</Text>
+                  </View>
+
+                  <View style={{ alignSelf: "flex-end", alignItems: "flex-end" }}>
+                    <Text variant="titleMedium">Total number of heads: {item.heads}</Text>
+
+                    <Text variant="titleLarge" style={{ fontWeight: 700, opacity: 0.76 }}>
+                      <FeatherIcons name="compass" size={22} /> Weight of {item.weight}kgs
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))
+          }
         </View>
       </BottomSheetScrollView>
     </BottomSheet>
   )
-}
+})
 
 const styles = StyleSheet.create({
   background: {
