@@ -17,9 +17,13 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom
 
 import SafeAreaView from "../../components/SafeAreaView"
 
+import { useLazyGetSyncCategoriesQuery } from "../../features/category/category.api"
+
 const Landing = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
+
+  const [getCategories] = useLazyGetSyncCategoriesQuery()
 
   const bottomSheetRef = useRef(null);
 
@@ -44,7 +48,7 @@ const Landing = ({ navigation }) => {
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `fullname` VARCHAR(255) NOT NULL, `username` VARCHAR(255) NOT NULL, `password` VARCHAR(255) NOT NULL, `role` VARCHAR(255) NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
@@ -59,6 +63,7 @@ const Landing = ({ navigation }) => {
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `informations` (`id` INTEGER PRIMARY KEY, `is_synced` INTEGER NOT NULL DEFAULT 0, `user_id` INTEGER NOT NULL, `category_id` INTEGER NOT NULL, `farm_id` INTEGER NOT NULL, `building_id` INTEGER NOT NULL, `leadman_id` INTEGER NOT NULL, `buyer_id` INTEGER NOT NULL, `plate_id` INTEGER NOT NULL, `type` VARCHAR(255) NOT NULL, `series_no` INTEGER NOT NULL, `harvested_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY, `information_id` INTEGER NOT NULL, `batch_no` INTEGER NOT NULL, `heads` REAL NOT NULL, `weight` REAL NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (`information_id`) REFERENCES `informations` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)")
+
 
           // sample data
           // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
@@ -81,8 +86,13 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [1, "AAV 3002"])
           // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [2, "CAR 1002"])
 
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `buyers`")
-          // console.log(rows)
+          const categories = await getCategories().unwrap()
+          for (const item of categories) {
+            await trxn.executeSqlAsync("INSERT OR REPLACE INTO `categories` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
+          }
+
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `categories`")
+          // console.log("Local: ", rows)
 
         } catch (error) {
           console.log("Create database table error: ", error)
