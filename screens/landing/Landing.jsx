@@ -18,12 +18,14 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom
 import SafeAreaView from "../../components/SafeAreaView"
 
 import { useLazyGetSyncCategoriesQuery } from "../../features/category/category.api"
+import { useLazyGetSyncBuildingsQuery } from "../../features/building/building.api"
 
 const Landing = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
 
   const [getCategories] = useLazyGetSyncCategoriesQuery()
+  const [getBuildings] = useLazyGetSyncBuildingsQuery()
 
   const bottomSheetRef = useRef(null);
 
@@ -52,7 +54,7 @@ const Landing = ({ navigation }) => {
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buyers` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
@@ -68,14 +70,8 @@ const Landing = ({ navigation }) => {
           // sample data
           // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
 
-          // await trxn.executeSqlAsync("INSERT INTO `categories` (`sync_id`, `name`) VALUES (?, ?)", [1, "BYAHERO"])
-          // await trxn.executeSqlAsync("INSERT INTO `categories` (`sync_id`, `name`) VALUES (?, ?)", [2, "RDF"])
-
           // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [1, "LARA 1"])
           // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [2, "LARA 2"])
-
-          // await trxn.executeSqlAsync("INSERT INTO `buildings` (`sync_id`, `name`) VALUES (?, ?)", [1, "BLDG 1"])
-          // await trxn.executeSqlAsync("INSERT INTO `buildings` (`sync_id`, `name`) VALUES (?, ?)", [2, "BLDG 2"])
 
           // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [1, "J. CASTRO"])
           // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [2, "B. TAMAYO"])
@@ -91,7 +87,12 @@ const Landing = ({ navigation }) => {
             await trxn.executeSqlAsync("INSERT OR REPLACE INTO `categories` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
           }
 
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `categories`")
+          const buildings = await getBuildings().unwrap()
+          for (const item of buildings) {
+            await trxn.executeSqlAsync("INSERT OR REPLACE INTO `buildings` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
+          }
+
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `buildings`")
           // console.log("Local: ", rows)
 
         } catch (error) {
