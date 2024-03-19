@@ -21,6 +21,7 @@ import { useLazyGetSyncCategoriesQuery } from "../../features/category/category.
 import { useLazyGetSyncFarmsQuery } from "../../features/farm/farm.api"
 import { useLazyGetSyncBuildingsQuery } from "../../features/building/building.api"
 import { useLazyGetSyncBuyersQuery } from "../../features/buyer/buyer.api"
+import { useLazyGetSyncLeadmenQuery } from "../../features/leadman/leadman.api"
 
 const Landing = ({ navigation }) => {
 
@@ -30,6 +31,7 @@ const Landing = ({ navigation }) => {
   const [getFarms] = useLazyGetSyncFarmsQuery()
   const [getBuildings] = useLazyGetSyncBuildingsQuery()
   const [getBuyers] = useLazyGetSyncBuyersQuery()
+  const [getLeadmen] = useLazyGetSyncLeadmenQuery()
 
   const bottomSheetRef = useRef(null);
 
@@ -45,7 +47,7 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buyers`")
-          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
+          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
 
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `informations`")
@@ -69,7 +71,7 @@ const Landing = ({ navigation }) => {
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buyers` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
@@ -115,8 +117,13 @@ const Landing = ({ navigation }) => {
             await trxn.executeSqlAsync("INSERT OR REPLACE INTO `buyers` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
           }
 
+          const leadmen = await getLeadmen().unwrap()
+          for (const item of leadmen) {
+            await trxn.executeSqlAsync("INSERT OR REPLACE INTO `leadmans` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
+          }
 
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `buyers`")
+
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `leadmans`")
           // console.log("Local: ", rows)
 
         } catch (error) {
