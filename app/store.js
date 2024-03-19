@@ -5,6 +5,7 @@ import { farmApi } from "../features/farm/farm.api"
 import { buildingApi } from "../features/building/building.api"
 import { buyerApi } from "../features/buyer/buyer.api"
 import { leadmanApi } from "../features/leadman/leadman.api"
+import { plateApi } from "../features/plate/plate.api"
 
 import userSlice from "../features/user/user.slice"
 import informationSlice from "../features/information/information.slice"
@@ -19,12 +20,14 @@ export const store = configureStore({
     [farmApi.reducerPath]: farmApi.reducer,
     [buyerApi.reducerPath]: buyerApi.reducer,
     [leadmanApi.reducerPath]: leadmanApi.reducer,
+    [plateApi.reducerPath]: plateApi.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([
     categoryApi.middleware,
     buildingApi.middleware,
     farmApi.middleware,
     buyerApi.middleware,
-    leadmanApi.middleware
+    leadmanApi.middleware,
+    plateApi.middleware
   ])
 })

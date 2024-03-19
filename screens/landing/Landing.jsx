@@ -22,6 +22,7 @@ import { useLazyGetSyncFarmsQuery } from "../../features/farm/farm.api"
 import { useLazyGetSyncBuildingsQuery } from "../../features/building/building.api"
 import { useLazyGetSyncBuyersQuery } from "../../features/buyer/buyer.api"
 import { useLazyGetSyncLeadmenQuery } from "../../features/leadman/leadman.api"
+import { useLazyGetSyncPlatesQuery } from "../../features/plate/plate.api"
 
 const Landing = ({ navigation }) => {
 
@@ -32,6 +33,7 @@ const Landing = ({ navigation }) => {
   const [getBuildings] = useLazyGetSyncBuildingsQuery()
   const [getBuyers] = useLazyGetSyncBuyersQuery()
   const [getLeadmen] = useLazyGetSyncLeadmenQuery()
+  const [getPlates] = useLazyGetSyncPlatesQuery()
 
   const bottomSheetRef = useRef(null);
 
@@ -47,7 +49,7 @@ const Landing = ({ navigation }) => {
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buyers`")
-          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
 
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `informations`")
@@ -74,7 +76,7 @@ const Landing = ({ navigation }) => {
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
 
 
@@ -86,12 +88,6 @@ const Landing = ({ navigation }) => {
 
           // sample data
           // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
-
-          // await trxn.executeSqlAsync("INSERT INTO `leadmans` (`sync_id`, `name`) VALUES (?, ?)", [1, "CRIS B."])
-          // await trxn.executeSqlAsync("INSERT INTO `leadmans` (`sync_id`, `name`) VALUES (?, ?)", [2, "WILSON N."])
-
-          // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [1, "AAV 3002"])
-          // await trxn.executeSqlAsync("INSERT INTO `plates` (`sync_id`, `name`) VALUES (?, ?)", [2, "CAR 1002"])
 
           const categories = await getCategories().unwrap()
           for (const item of categories) {
@@ -122,10 +118,10 @@ const Landing = ({ navigation }) => {
             await trxn.executeSqlAsync("INSERT OR REPLACE INTO `leadmans` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
           }
 
-
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `leadmans`")
-          // console.log("Local: ", rows)
-
+          const plates = await getPlates().unwrap()
+          for (const item of plates) {
+            await trxn.executeSqlAsync("INSERT OR REPLACE INTO `plates` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
+          }
         } catch (error) {
           console.log("Create database table error: ", error)
         }
