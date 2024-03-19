@@ -18,6 +18,7 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom
 import SafeAreaView from "../../components/SafeAreaView"
 
 import { useLazyGetSyncCategoriesQuery } from "../../features/category/category.api"
+import { useLazyGetSyncFarmsQuery } from "../../features/farm/farm.api"
 import { useLazyGetSyncBuildingsQuery } from "../../features/building/building.api"
 
 const Landing = ({ navigation }) => {
@@ -25,6 +26,7 @@ const Landing = ({ navigation }) => {
   const db = SQLite.openDatabase("bionic.db")
 
   const [getCategories] = useLazyGetSyncCategoriesQuery()
+  const [getFarms] = useLazyGetSyncFarmsQuery()
   const [getBuildings] = useLazyGetSyncBuildingsQuery()
 
   const bottomSheetRef = useRef(null);
@@ -38,8 +40,9 @@ const Landing = ({ navigation }) => {
           // Reset tables
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `users`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `categories`")
-          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buildings`")
+          // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farms`")
+          await trxn.executeSqlAsync("DROP TABLE IF EXISTS `farm_buildings`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `buyers`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `leadmans`")
           // await trxn.executeSqlAsync("DROP TABLE IF EXISTS `plates`")
@@ -50,28 +53,35 @@ const Landing = ({ navigation }) => {
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `fullname` VARCHAR(255) NOT NULL, `username` VARCHAR(255) NOT NULL, `password` VARCHAR(255) NOT NULL, `role` VARCHAR(255) NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
+
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farms` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
+          await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `farm_buildings` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `farm_id` INTEGER NOT NULL, `building_id` INTEGER NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
+
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buyers` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
+
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
+
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER NOT NULL, `name` VARCHAR(255) UNIQUE NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
+
+
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `informations` (`id` INTEGER PRIMARY KEY, `is_synced` INTEGER NOT NULL DEFAULT 0, `user_id` INTEGER NOT NULL, `category_id` INTEGER NOT NULL, `farm_id` INTEGER NOT NULL, `building_id` INTEGER NOT NULL, `leadman_id` INTEGER NOT NULL, `buyer_id` INTEGER NOT NULL, `plate_id` INTEGER NOT NULL, `type` VARCHAR(255) NOT NULL, `series_no` INTEGER NOT NULL, `harvested_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY, `information_id` INTEGER NOT NULL, `batch_no` INTEGER NOT NULL, `heads` REAL NOT NULL, `weight` REAL NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (`information_id`) REFERENCES `informations` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)")
 
 
           // sample data
           // await trxn.executeSqlAsync("INSERT INTO `users` (`sync_id`, `fullname`, `username`, `password`, `role`) values (?, ?, ?, ?, ?)", [1, "Limayy Louie Ducut", "llducut", "$2y$10$qQRHkqYiS2rrsVjU4sDTiOSkhSDzAvCPjWmV6D.fUkbXfyhMQPKAq", "Administrator"])
-
-          // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [1, "LARA 1"])
-          // await trxn.executeSqlAsync("INSERT INTO `farms` (`sync_id`, `name`) VALUES (?, ?)", [2, "LARA 2"])
 
           // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [1, "J. CASTRO"])
           // await trxn.executeSqlAsync("INSERT INTO `buyers` (`sync_id`, `name`) VALUES (?, ?)", [2, "B. TAMAYO"])
@@ -92,7 +102,18 @@ const Landing = ({ navigation }) => {
             await trxn.executeSqlAsync("INSERT OR REPLACE INTO `buildings` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
           }
 
-          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `buildings`")
+          const farms = await getFarms().unwrap()
+          for (const item of farms) {
+            await trxn.executeSqlAsync("INSERT OR REPLACE INTO `farms` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
+
+            for (const buildingItem of item.buildings) {
+              await trxn.executeSqlAsync("INSERT INTO `farm_buildings` (`sync_id`, `farm_id`, `building_id`) VALUES (?, ?, ?)", [buildingItem.pivot.id, buildingItem.pivot.farm_id, buildingItem.pivot.building_id])
+            }
+          }
+
+
+
+          // const { rows } = await trxn.executeSqlAsync("SELECT * FROM `farm_buildings`")
           // console.log("Local: ", rows)
 
         } catch (error) {

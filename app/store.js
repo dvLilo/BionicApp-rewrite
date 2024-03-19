@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit"
 
 import { categoryApi } from "../features/category/category.api"
+import { farmApi } from "../features/farm/farm.api"
 import { buildingApi } from "../features/building/building.api"
 
 import userSlice from "../features/user/user.slice"
@@ -13,6 +14,7 @@ export const store = configureStore({
 
     [categoryApi.reducerPath]: categoryApi.reducer,
     [buildingApi.reducerPath]: buildingApi.reducer,
+    [farmApi.reducerPath]: farmApi.reducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([categoryApi.middleware, buildingApi.middleware])
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([categoryApi.middleware, buildingApi.middleware, farmApi.middleware])
 })
