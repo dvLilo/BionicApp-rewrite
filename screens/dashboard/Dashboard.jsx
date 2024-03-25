@@ -34,6 +34,8 @@ import { LinearGradient } from "expo-linear-gradient"
 
 import SafeAreaView from "../../components/SafeAreaView"
 
+import { useSyncInformationMutation } from "../../features/information/information.api"
+
 const Dashboard = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
@@ -41,67 +43,110 @@ const Dashboard = ({ navigation }) => {
   const bottomSheetRef = useRef(null)
   const transactionsSheetRef = useRef(null)
 
+  const [syncInformation] = useSyncInformationMutation()
+
   const [transactions, setTransactions] = useState([])
   const [transaction, setTransaction] = useState(null)
 
-  useFocusEffect(
-    useCallback(() => {
-      db.transactionAsync(async (trxn) => {
-        try {
-          const {
-            rows: CATEGORIES
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories` WHERE `deleted_at` IS NULL")
+  const getTransactionsHandler = () => {
+    db.transactionAsync(async (trxn) => {
+      try {
+        // await trxn.executeSqlAsync("UPDATE `informations` SET `is_synced` = 0 WHERE `id` = ?", [1])
 
-          const {
-            rows: FARMS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms` WHERE `deleted_at` IS NULL")
+        const {
+          rows: CATEGORIES
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `categories` WHERE `deleted_at` IS NULL")
 
-          const {
-            rows: BUILDINGS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings` WHERE `deleted_at` IS NULL")
+        const {
+          rows: FARMS
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `farms` WHERE `deleted_at` IS NULL")
 
-          const {
-            rows: LEADMANS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `leadmans` WHERE `deleted_at` IS NULL")
+        const {
+          rows: BUILDINGS
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buildings` WHERE `deleted_at` IS NULL")
 
-          const {
-            rows: BUYERS
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buyers` WHERE `deleted_at` IS NULL")
+        const {
+          rows: LEADMANS
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `leadmans` WHERE `deleted_at` IS NULL")
 
-          const {
-            rows: PLATES
-          } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates` WHERE `deleted_at` IS NULL")
+        const {
+          rows: BUYERS
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `buyers` WHERE `deleted_at` IS NULL")
 
-          // await trxn.executeSqlAsync("UPDATE `informations` SET `is_synced` = 0 WHERE `id` = 1")
+        const {
+          rows: PLATES
+        } = await trxn.executeSqlAsync("SELECT `id`, `name` FROM `plates` WHERE `deleted_at` IS NULL")
 
-          const { rows } = await trxn.executeSqlAsync("SELECT * FROM `informations` ORDER BY `id` DESC")
-          const res = rows.map((item) => {
 
-            const category = CATEGORIES.find((categoryItem) => categoryItem.id === item.category_id)
-            const farm = FARMS.find((farmItem) => farmItem.id === item.farm_id)
-            const building = BUILDINGS.find((buildingItem) => buildingItem.id === item.building_id)
-            const leadman = LEADMANS.find((leadmanItem) => leadmanItem.id === item.leadman_id)
-            const buyer = BUYERS.find((buyerItem) => buyerItem.id === item.buyer_id)
-            const plate = PLATES.find((plateItem) => plateItem.id === item.plate_id)
+        const {
+          rows: INFROMATION
+        } = await trxn.executeSqlAsync("SELECT * FROM `informations` ORDER BY `id` DESC")
 
-            return {
-              ...item,
-              category,
-              farm,
-              building,
-              leadman,
-              buyer,
-              plate
-            }
-          })
+        const result = INFROMATION.map((item) => {
 
-          setTransactions(res)
-          // console.log(res)
-        } catch (error) {
-          console.log(error)
+          const category = CATEGORIES.find((categoryItem) => categoryItem.id === item.category_id)
+          const farm = FARMS.find((farmItem) => farmItem.id === item.farm_id)
+          const building = BUILDINGS.find((buildingItem) => buildingItem.id === item.building_id)
+          const leadman = LEADMANS.find((leadmanItem) => leadmanItem.id === item.leadman_id)
+          const buyer = BUYERS.find((buyerItem) => buyerItem.id === item.buyer_id)
+          const plate = PLATES.find((plateItem) => plateItem.id === item.plate_id)
+
+          return {
+            ...item,
+            category,
+            farm,
+            building,
+            leadman,
+            buyer,
+            plate
+          }
+        })
+
+        setTransactions(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+  }
+
+  const syncTransactionHandler = async (data) => {
+    await db.transactionAsync(async (trxn) => {
+      try {
+        const payload = {
+          user_id: data.user_id,
+          category_id: data.category_id,
+          farm_id: data.farm_id,
+          building_id: data.building_id,
+
+          leadman_id: data.leadman.id,
+          leadman_name: data.leadman.name,
+          buyer_id: data.buyer.id,
+          buyer_name: data.buyer.name,
+          plate_id: data.plate.id,
+          plate_name: data.plate.name,
+
+          type: data.type,
+          series_no: data.series_no,
+          harvested_at: data.harvested_at,
         }
-      })
-    }, [navigation])
+
+        const {
+          rows: transactions
+        } = await trxn.executeSqlAsync("SELECT `batch_no`, `heads`, `weight` FROM `transactions` WHERE `information_id` = ?", [data.id])
+
+        await syncInformation({ ...payload, transactions }).unwrap()
+
+        await trxn.executeSqlAsync("UPDATE `informations` SET `is_synced` = 1 WHERE `id` = ?", [data.id])
+      } catch (error) {
+        console.log("Synching information to database error: ", error)
+      }
+    })
+
+    getTransactionsHandler()
+  }
+
+  useFocusEffect(
+    useCallback(getTransactionsHandler, [navigation])
   )
 
   useEffect(() => {
@@ -147,7 +192,8 @@ const Dashboard = ({ navigation }) => {
                       mode="contained"
                       icon={({ color, size }) => <FeatherIcons name={item.is_synced ? "check" : "refresh-ccw"} color={color} size={size} />}
                       size={16}
-                      onPress={() => { }}
+                      disabled={!!item.is_synced}
+                      onPress={() => syncTransactionHandler(item)}
                     />
                   </View>
                 </TouchableRipple>

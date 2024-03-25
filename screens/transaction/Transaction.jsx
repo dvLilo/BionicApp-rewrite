@@ -69,36 +69,6 @@ const transactionSchema = yup.object().shape({
   weight: yup.number().required().label("Weight").typeError("Invalid weight value.")
 })
 
-// const CATEGORIES = [
-//   { id: 1, label: "BYAHERO", value: "BYAHERO" },
-//   { id: 2, label: "RDF", value: "RDF" }
-// ]
-
-// const FARMS = [
-//   { id: 1, label: "LARA 1", value: "LARA 1" },
-//   { id: 2, label: "LARA 2", value: "LARA 2" },
-// ]
-
-// const BUILDINGS = [
-//   { id: 1, label: "BLDG 1", value: "BLDG 1" },
-//   { id: 2, label: "BLDG 2", value: "BLDG 2" }
-// ]
-
-// const LEADMANS = [
-//   { id: 1, label: "LEADMAN 1", value: "LEADMAN 1" },
-//   { id: 2, label: "LEADMAN 2", value: "LEADMAN 2" }
-// ]
-
-// const BUYERS = [
-//   { id: 1, label: "BUYER 1", value: "BUYER 1" },
-//   { id: 2, label: "BUYER 2", value: "BUYER 2" }
-// ]
-
-// const PLATES = [
-//   { id: 1, label: "AAV 3002", value: "AAV 3002" },
-//   { id: 2, label: "CAR 1002", value: "CAR 1002" }
-// ]
-
 const Transaction = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
@@ -429,8 +399,6 @@ const InformationBottom = ({ navigation }) => {
     }
   })
 
-  // console.log(watch("category"))
-
   const [CATEGORIES, setCategories] = useState([])
   const [FARMS, setFarms] = useState([])
   const [BUILDINGS, setBuildings] = useState([])
@@ -480,7 +448,6 @@ const InformationBottom = ({ navigation }) => {
   const { open: farmOpen, onToggle: farmToggle } = useDisclosure()
   const { open: buildingOpen, onToggle: buildingToggle } = useDisclosure()
   const { open: leadmanOpen, onToggle: leadmanToggle } = useDisclosure()
-  const { open: checkerOpen, onToggle: checkerToggle } = useDisclosure()
   const { open: buyerOpen, onToggle: buyerToggle } = useDisclosure()
   const { open: plateOpen, onToggle: plateToggle } = useDisclosure()
 

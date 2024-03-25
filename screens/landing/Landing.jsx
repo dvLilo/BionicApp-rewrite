@@ -17,6 +17,8 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom
 
 import SafeAreaView from "../../components/SafeAreaView"
 
+import useDisclosure from "../../hooks/useDisclosure"
+
 import { useLazyGetSyncCategoriesQuery } from "../../features/category/category.api"
 import { useLazyGetSyncFarmsQuery } from "../../features/farm/farm.api"
 import { useLazyGetSyncBuildingsQuery } from "../../features/building/building.api"
@@ -27,6 +29,8 @@ import { useLazyGetSyncPlatesQuery } from "../../features/plate/plate.api"
 const Landing = ({ navigation }) => {
 
   const db = SQLite.openDatabase("bionic.db")
+
+  const { open: isSynching, onToggle: toggleSynching } = useDisclosure(true)
 
   const [getCategories] = useLazyGetSyncCategoriesQuery()
   const [getFarms] = useLazyGetSyncFarmsQuery()
@@ -72,9 +76,7 @@ const Landing = ({ navigation }) => {
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `buyers` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
-
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `leadmans` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
-
 
           await trxn.executeSqlAsync("CREATE TABLE IF NOT EXISTS `plates` (`id` INTEGER PRIMARY KEY, `sync_id` INTEGER UNIQUE NOT NULL, `name` TEXT NOT NULL, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP DEFAULT NULL)")
 
@@ -122,10 +124,16 @@ const Landing = ({ navigation }) => {
           for (const item of plates) {
             await trxn.executeSqlAsync("INSERT OR REPLACE INTO `plates` (`sync_id`, `name`, `deleted_at`) VALUES (?, ?, ?)", [item.id, item.name, item.deleted_at])
           }
+
+          toggleSynching()
         } catch (error) {
-          console.log("Create database table error: ", error)
+          console.log("Create/sync database error: ", error)
         }
       })
+    }
+
+    if (index === -1) {
+      toggleSynching()
     }
   }
 
@@ -161,16 +169,29 @@ const Landing = ({ navigation }) => {
         enablePanDownToClose
       >
         <BottomSheetScrollView style={{ backgroundColor: "#effcff", }}>
-          <View style={{ alignItems: "center" }}>
-            <View style={{ width: 88, height: 88, justifyContent: "center", alignItems: "center", borderColor: "#646ecb", borderWidth: 4, borderRadius: 64, marginTop: 16, marginBottom: 16 }}>
-              <View style={{ backgroundColor: "#646ecb", width: 72, height: 72, justifyContent: "center", alignItems: "center", borderRadius: 64 }}>
-                <FeatherIcons name="refresh-cw" color="#fffafa" size={42} />
+          {isSynching &&
+            <View style={{ alignItems: "center" }}>
+              <View style={{ width: 88, height: 88, justifyContent: "center", alignItems: "center", borderColor: "#646ecb", borderWidth: 4, borderRadius: 64, marginTop: 16, marginBottom: 16 }}>
+                <View style={{ backgroundColor: "#646ecb", width: 72, height: 72, justifyContent: "center", alignItems: "center", borderRadius: 64 }}>
+                  <FeatherIcons name="refresh-cw" color="#fffafa" size={42} />
+                </View>
               </View>
-            </View>
 
-            <Text variant="titleLarge">Syncing!</Text>
-            <Text variant="titleSmall" style={{ width: "76%" }}>Please wait whilst your masterlist and transaction are being synchronized...</Text>
-          </View>
+              <Text variant="titleLarge">Syncing!</Text>
+              <Text variant="titleSmall" style={{ width: "76%" }}>Please wait whilst your masterlist and transaction are being synchronized...</Text>
+            </View>}
+
+          {!isSynching &&
+            <View style={{ alignItems: "center" }}>
+              <View style={{ width: 88, height: 88, justifyContent: "center", alignItems: "center", borderColor: "#00c851", borderWidth: 4, borderRadius: 64, marginTop: 16, marginBottom: 16 }}>
+                <View style={{ backgroundColor: "#00c851", width: 72, height: 72, justifyContent: "center", alignItems: "center", borderRadius: 64 }}>
+                  <FeatherIcons name="check" color="#fffafa" size={42} />
+                </View>
+              </View>
+
+              <Text variant="titleLarge">Success!</Text>
+              <Text variant="titleSmall" style={{ width: "78%" }}>Masterlist and transactions has been synchronized successfully!</Text>
+            </View>}
         </BottomSheetScrollView>
       </BottomSheet>
     </ImageBackground>
